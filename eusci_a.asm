@@ -1,5 +1,5 @@
 ; vim: filetype=msp
-; vim: path+=$HOME/.local/share/ti/ccs2050/ccs/ccs_base/msp430/include/
+; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
                 .include "eusci_a.inc"

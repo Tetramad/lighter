@@ -1,5 +1,5 @@
 ; vim: filetype=msp
-; vim: path+=$HOME/.local/share/ti/ccs2050/ccs/ccs_base/msp430/include/
+; vim: path+=$CCS/ccs_base/msp430/include/
 
     .define 00h, PT_RES             ; PACKET_TYPE_RESERVED
     .define 01h, PT_INT             ; PACKET_TYPE_INTEGRAL

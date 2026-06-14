@@ -25,6 +25,14 @@ DISAS = dis430
 
 PROGRAMMER = MSP430Flasher
 
+OBJS = \
+	   main.obj \
+	   busy_wait.obj \
+	   eusci_a.obj \
+	   timer_b0.obj \
+	   sleep.obj \
+	   light_control.obj \
+
 all: main.txt main.dis.txt
 
 main.dis.txt: main.out
@@ -33,14 +41,14 @@ main.dis.txt: main.out
 main.txt: main.out
 	$(HEX) $(HEXFLAGS) --outfile=$@ $^
 
-main.out: eusci_a.obj busy_wait.obj main.obj
+main.out: $(OBJS)
 	$(LD) $(LDFLAGS) --output_file=$@ $^
 
 %.obj: %.asm
 	$(AS) $(ASFLAGS) --output_file=$@ $^
 
 clean:
-	$(RM) eusci_a.obj busy_wait.obj main.obj main.out main.txt main.dis.txt
+	$(RM) $(OBJS) main.txt main.dis.txt
 
 program: main.txt
 	$(PROGRAMMER) -g -z [VCC,RESET] -w main.txt
