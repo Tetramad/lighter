@@ -27,7 +27,9 @@ void format_parser(struct format_parser *fp, char ch);
 void sighandler_sigint(int);
 void close_dwf(void);
 
-int main(void) {
+int arg_raw = 0;
+
+int main(int argc, char *argv[]) {
     fputs("MSP430 terminal for WaveForms " VERSION_STRING "\n", stdout);
 
     if (sigaction(SIGINT,
@@ -36,6 +38,15 @@ int main(void) {
         < 0) {
         perror("sigaction");
         exit(EXIT_FAILURE);
+    }
+
+    if (argc > 1) {
+        if (strcmp(argv[1], "--raw") == 0) {
+            arg_raw = 1;
+        } else {
+            fprintf(stderr, "unknown argument %s.\n", argv[1]);
+            exit(EXIT_FAILURE);
+        }
     }
 
     int ok;
@@ -188,6 +199,17 @@ int main(void) {
                                &received,
                                &parity_error);
         ASSERT_OK(ok);
+
+        if (arg_raw) {
+            fprintf(stdout, "R(%2d) [", received);
+            for (int i = 0; i < received; ++i) {
+                fprintf(stdout, "%02hhx", rx_buffer[i]);
+                if (i != received - 1) {
+                    fputc(' ', stdout);
+                }
+            }
+            fputs("]\n", stdout);
+        }
 
         for (int i = 0; i < received; ++i) {
             format_parser(&fp, rx_buffer[i]);
