@@ -2,8 +2,9 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
-                .include "light_control.inc"
+                .include "eusci_a.inc"
                 .include "sleep.inc"
+                .include "adc.inc"
 
                 .def    RESET
 
@@ -24,27 +25,47 @@ stop_watchdog:  mov.w   #WDTPW+WDTHOLD,&WDTCTL
 FLL_LOCK:       bit.w   #FLLUNLOCK,&CSCTL7
                 jnz     FLL_LOCK
 
+config_eUSCI_A0:
+                call    #eUSCI_A0_init
+
+config_ADC:
+                call    #ADC_init
+
 config_GPIO:
                 bic.b   #BIT0,&P2OUT
                 bis.b   #BIT0,&P2DIR
                 bic.w   #LOCKLPM5,&PM5CTL0
 
 main:
-                call    #LCNTL_init
-                mov.w   #200,R12
-                mov.w   #1,R13
-                mov.w   #100,R14
-                call    #LCNTL_transition
-                mov.w   #0,R12
-                mov.w   #-1,R13
-                mov.w   #100,R14
-                call    #LCNTL_transition
-                call    #LCNTL_deinit
-                mov.w   #15,R12
-                call    #RTC_sleep_s
+                call    #ADC_fetch
+
+                mov.w   #adc_result_A0,R12
+                mov.w   #2,R13
+                mov.w   #PT_INT,R14
+                mov.w   #PF_HEX,R15
+                call    #eUSCI_A0_transmit
+
+                mov.w   #adc_result_A4,R12
+                mov.w   #2,R13
+                mov.w   #PT_INT,R14
+                mov.w   #PF_HEX,R15
+                call    #eUSCI_A0_transmit
+
+                mov.w   #adc_result_A5,R12
+                mov.w   #2,R13
+                mov.w   #PT_INT,R14
+                mov.w   #PF_HEX,R15
+                call    #eUSCI_A0_transmit
+
+                mov.w   #1000,R12
+                call    #RTC_sleep_ms
+
                 jmp     main
 
 error?:
+                bis.b   #BIT0,&P2OUT
+                tst.w   R12
+                jge     hang?
                 push.w  R12
                 bis.b   #BIT0,&P2OUT
                 mov.w   #1000,R12
@@ -54,8 +75,7 @@ error?:
                 call    #RTC_sleep_ms
                 pop.w   R12
                 inc.w   R12
-                jnz     error?
-                bis.b   #BIT0,&P2OUT
+                jmp     error?
 
 hang?:          jmp     hang?
 

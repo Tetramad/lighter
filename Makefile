@@ -32,6 +32,7 @@ OBJS = \
 	   timer_b0.obj \
 	   sleep.obj \
 	   light_control.obj \
+	   adc.obj
 
 all: main.txt main.dis.txt
 
