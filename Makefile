@@ -32,7 +32,8 @@ OBJS = \
 	   timer_b0.obj \
 	   sleep.obj \
 	   light_control.obj \
-	   adc.obj
+	   user_input.obj \
+	   datatable.obj
 
 all: main.txt main.dis.txt
 
@@ -49,7 +50,7 @@ main.out: $(OBJS)
 	$(AS) $(ASFLAGS) --output_file=$@ $^
 
 clean:
-	$(RM) $(OBJS) main.txt main.dis.txt
+	$(RM) $(OBJS) main.out main.txt main.dis.txt
 
 program: main.txt
 	$(PROGRAMMER) -g -z [VCC,RESET] -w main.txt

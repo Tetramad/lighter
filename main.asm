@@ -4,7 +4,7 @@
                 .cdecls C,LIST,"msp430.h"
                 .include "eusci_a.inc"
                 .include "sleep.inc"
-                .include "adc.inc"
+                .include "user_input.inc"
 
                 .def    RESET
 
@@ -28,34 +28,49 @@ FLL_LOCK:       bit.w   #FLLUNLOCK,&CSCTL7
 config_eUSCI_A0:
                 call    #eUSCI_A0_init
 
-config_ADC:
-                call    #ADC_init
-
 config_GPIO:
                 bic.b   #BIT0,&P2OUT
                 bis.b   #BIT0,&P2DIR
                 bic.w   #LOCKLPM5,&PM5CTL0
 
 main:
-                call    #ADC_fetch
+                call    #UIN_begin
+                call    #UIN_read_and_decode
 
-                mov.w   #adc_result_A0,R12
+                call    #UIN_timezone
+                tst.w   R12
+                jl      error?
+                push.w  R13
+                mov.w   SP,R12
                 mov.w   #2,R13
                 mov.w   #PT_INT,R14
                 mov.w   #PF_HEX,R15
                 call    #eUSCI_A0_transmit
+                pop.w   R3
 
-                mov.w   #adc_result_A4,R12
+                call    #UIN_sunrise
+                tst.w   R12
+                jl      error?
+                push.w  R13
+                mov.w   SP,R12
                 mov.w   #2,R13
                 mov.w   #PT_INT,R14
                 mov.w   #PF_HEX,R15
                 call    #eUSCI_A0_transmit
+                pop.w   R3
 
-                mov.w   #adc_result_A5,R12
+                call    #UIN_sunset
+                tst.w   R12
+                jl      error?
+                push.w  R13
+                mov.w   SP,R12
                 mov.w   #2,R13
                 mov.w   #PT_INT,R14
                 mov.w   #PF_HEX,R15
                 call    #eUSCI_A0_transmit
+                pop.w   R3
+
+                call    #UIN_end
 
                 mov.w   #1000,R12
                 call    #RTC_sleep_ms
