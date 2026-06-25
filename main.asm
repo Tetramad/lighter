@@ -2,9 +2,9 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
-                .include "eusci_a.inc"
-                .include "sleep.inc"
                 .include "user_input.inc"
+                .include "gnss.inc"
+                .include "systick.inc"
 
                 .def    RESET
 
@@ -25,13 +25,56 @@ stop_watchdog:  mov.w   #WDTPW+WDTHOLD,&WDTCTL
 FLL_LOCK:       bit.w   #FLLUNLOCK,&CSCTL7
                 jnz     FLL_LOCK
 
-config_eUSCI_A0:
-                call    #eUSCI_A0_init
+config_SYSTICK:
+                call    #SYSTICK_init
 
 config_GPIO:
+                mov.w   #00000h,&PADIR
+                mov.w   #0C1FFh,&PAOUT
+                mov.w   #0C1FFh,&PAREN
+
+                call    #GNSS_wakeup_init
+                call    #GNSS_reset_init
+
                 bic.b   #BIT0,&P2OUT
                 bis.b   #BIT0,&P2DIR
                 bic.w   #LOCKLPM5,&PM5CTL0
+
+main:
+                eint
+                call    #GNSS_reset
+                mov.w   #1000,R12
+                call    #SYSTICK_delay_ms
+
+                call    #GNSS_begin
+                call    #GNSS_timesync
+                call    #GNSS_end
+
+main_loop:
+                jmp     main_loop
+
+error?:
+                dint
+                bis.b   #BIT0,&P2OUT
+                tst.w   R12
+                jge     hang?
+                push.w  R12
+                bis.b   #BIT0,&P2OUT
+                mov.w   #1000,R12
+                call    #SYSTICK_delay_ms
+                bic.b   #BIT0,&P2OUT
+                mov.w   #1000,R12
+                call    #SYSTICK_delay_ms
+                pop.w   R12
+                inc.w   R12
+                jmp     error?
+
+hang?:          jmp     hang?
+
+; Interrupt Vectors
+                .sect   RESET_VECTOR
+                .word   RESET
+                .end
 
 main:
                 call    #UIN_begin
@@ -73,28 +116,6 @@ main:
                 call    #UIN_end
 
                 mov.w   #1000,R12
-                call    #RTC_sleep_ms
+                call    #SYSTICK_delay_ms
 
                 jmp     main
-
-error?:
-                bis.b   #BIT0,&P2OUT
-                tst.w   R12
-                jge     hang?
-                push.w  R12
-                bis.b   #BIT0,&P2OUT
-                mov.w   #1000,R12
-                call    #RTC_sleep_ms
-                bic.b   #BIT0,&P2OUT
-                mov.w   #1000,R12
-                call    #RTC_sleep_ms
-                pop.w   R12
-                inc.w   R12
-                jmp     error?
-
-hang?:          jmp     hang?
-
-; Interrupt Vectors
-                .sect   RESET_VECTOR
-                .word   RESET
-                .end

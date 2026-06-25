@@ -3,7 +3,7 @@
 
                 .cdecls C,LIST,"msp430.h"
                 .include "timer_b0.inc"
-                .include "sleep.inc"
+                .include "systick.inc"
 
                 .bss    current,2,2
 
@@ -121,7 +121,7 @@ $6:
 
 $7:
                 mov.w   interval_ms,R12
-                call    #RTC_sleep_ms
+                call    #SYSTICK_delay_ms
 
                 cmp.w   &current,target
                 jnz     loop?

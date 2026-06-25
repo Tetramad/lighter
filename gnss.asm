@@ -2,23 +2,7 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
-                .include "eusci_a.inc"
-
-GNSS_RESET_ACT  .macro
-                bic.b   #BIT7,&P2OUT
-                .endm
-
-GNSS_RESET_INA  .macro
-                bis.b   #BIT7,&P2OUT
-                .endm
-
-GNSS_WAKEUP_ACT .macro
-                bis.b   #BIT6,&P2OUT
-                .endm
-
-GNSS_WAKEUP_INA .macro
-                bic.b   #BIT6,&P2OUT
-                .endm
+                .include "systick.inc"
 
 PARSER_STRUCT:  .struct
 run_length:     .uchar
@@ -35,103 +19,161 @@ parser:         .tag    PARSER_STRUCT
                 .bss    parser, PARSER_SIZE
                 .bss    time, 8, 2
 
-                .text
-                .retain
-                .retainrefs
-
-config_GPIO:
-                bic.b   #BIT2|BIT3,&P1OUT
-                bis.b   #BIT2|BIT3,&P1DIR
-                bic.b   #BIT6|BIT7,&P2OUT
-                bis.b   #BIT6|BIT7,&P2DIR
-                GNSS_RESET_INA
-                GNSS_WAKEUP_ACT
-                bis.b   #BIT0,&P1DIR
-                bis.b   #BIT0,&P1SEL1
-
-config_eUSCI_A0:
-                call    #eUSCI_A0_init
-                bis.w   #UCRXIE,&UCA0IE
-
-old_main:
-                eint
-                mov.w   #2000,R12
-                call    #busy_wait_ms
-
-                mov.w   #GNSS_INIT_CMD,R12
-                call    #transmit
-
-                bis.b   #BIT2,&P1OUT
-
-$1:
-                clr.w   &time+6
-                GNSS_WAKEUP_ACT
-                mov.w   #1000,R12
-                call    #busy_wait_ms
-                mov.w   #GNSS_DISTXT_CMD,R12
-                call    #transmit
-$2:             cmp.w   #9,&time+6
-                jlo     $2
-                mov.w   #time+0,R12
-                mov.w   #1,R13
-                mov.w   #PT_INT,R14
-                mov.w   #PF_DEC,R15
-                call    #eUSCI_A0_transmit
-                mov.w   #time+2,R12
-                mov.w   #1,R13
-                mov.w   #PT_INT,R14
-                mov.w   #PF_DEC,R15
-                call    #eUSCI_A0_transmit
-                mov.w   #time+4,R12
-                mov.w   #1,R13
-                mov.w   #PT_INT,R14
-                mov.w   #PF_DEC,R15
-                call    #eUSCI_A0_transmit
-
-                GNSS_WAKEUP_INA
-                mov.w   #GNSS_BACKUP_CMD,R12
-                call    #transmit
-                mov.w   #5000,R12
-                call    #busy_wait_ms
-                ;jmp     $1
-
-                bis.b   #BIT6|BIT7,&P1DIR
-                bis.b   #BIT6|BIT7,&P1SELC
-                mov.w   #TBCLGRP_0+CNTL__16+TBSSEL__SMCLK+ID__1+MC__STOP+TBCLR,&TB0CTL
-                mov.w   #CLLD_2+CAP__COMPARE+OUTMOD_7+CCIE_0,&TB0CCTL1
-                mov.w   #CLLD_2+CAP__COMPARE+OUTMOD_7+CCIE_0,&TB0CCTL2
-                mov.w   #1000,&TB0CCR0
-                mov.w   #100,&TB0CCR1
-                mov.w   #100,&TB0CCR2
-                mov.w   #TBIDEX__1,&TB0EX0
-                bis.w   #MC__UP,&TB0CTL
-
-                mov.w   #30000,R12
-                call    #busy_wait_ms
-
-                bis.b   #BIT6|BIT7,&P1SELC
-                jmp     $1
-
-hang?:          jmp     hang?
-
-                .text
-transmit:       .asmfunc
-; (R12:=cmd:cstring) -> ()
-                mov.w   #0,R13
-LOOP?:          cmp.b   @R12,R13
-                jeq     $0
-WAIT?:          bit.b   #UCTXIFG_L,&UCA0IFG_L
-                jz      WAIT?
-                mov.b   @R12+,&UCA0TXBUF_L
-                jmp     LOOP?
-$0:             ret
-                .endasmfunc
-
                 .sect   ".const"
 GNSS_INIT_CMD:  .string "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*35",0Dh,0Ah,0
 GNSS_DISTXT_CMD:.string "$PQTXT,W,0,0*22",0Dh,0Ah,0
 GNSS_BACKUP_CMD:.string "$PMTK225,4*2F",0Dh,0Ah,0
 GNSS_FCOLD_CMD: .string "$PMTK104*37",0Dh,0Ah,0
+
+                .text
+                .def    GNSS_begin
+GNSS_begin:
+; () -> ()
+                .asmfunc
+                bis.w   #UCSWRST,&UCA0CTLW0
+                ; UCOS16=1, UCBRx=6, UCBRFx=13,
+                ; UCBRSx=0x22 -> 9600baud@1048576hz
+                mov.w   #UCSWRST__ENABLE|UCSSEL__SMCLK|UCSPB_0,&UCA0CTLW0
+                mov.w   #6,&UCA0BRW
+                mov.w   #2200h|00D0h|UCOS16_1,&UCA0MCTLW
+                bic.w   #UCSWRST,&UCA0CTLW0
+                bis.w   #UCRXIE,&UCA0IE
+
+                bic.b   #BIT6|BIT7,&P1REN
+                bis.b   #BIT6|BIT7,&P1SEL0
+
+                call    #GNSS_wakeup
+
+                mov.w   #1000,R12
+                call    #SYSTICK_delay_ms
+                mov.w   #GNSS_INIT_CMD,R12
+                call    #GNSS_transmit
+                mov.w   #GNSS_DISTXT_CMD,R12
+                call    #GNSS_transmit
+
+                ret
+                .endasmfunc
+
+                .text
+                .def    GNSS_end
+GNSS_end:
+; () -> ()
+                .asmfunc
+                mov.w   #GNSS_BACKUP_CMD,R12
+                call    #GNSS_transmit
+
+                bic.w   #UCRXIE,&UCA0IE
+
+                mov.w   #1000,R12
+                call    #SYSTICK_delay_ms
+
+                bic.b   #BIT6|BIT7,&P1SEL0
+                bis.b   #BIT6|BIT7,&P1REN
+                ret
+                .endasmfunc
+
+                .text
+                .def    GNSS_wakeup_init
+GNSS_wakeup_init:
+; () -> ()
+                .asmfunc
+                bic.b   #BIT6,&P2REN
+                bic.b   #BIT6,&P2OUT
+                bis.b   #BIT6,&P2DIR
+                ret
+                .endasmfunc
+
+                .text
+                .def    GNSS_wakeup
+GNSS_wakeup:
+; () -> ()
+                .asmfunc
+                bis.b   #BIT6,&P2OUT
+                mov.w   #1500,R12
+                call    #SYSTICK_delay_ms
+                bic.b   #BIT6,&P2OUT
+                ret
+                .endasmfunc
+
+                .text
+                .def    GNSS_reset_init
+GNSS_reset_init:
+; () -> ()
+                .asmfunc
+                bic.b   #BIT7,&P2REN
+                bic.b   #BIT7,&P2OUT
+                ret
+                .endasmfunc
+
+                .text
+                .def    GNSS_reset
+GNSS_reset:
+; () -> ()
+                .asmfunc
+                bis.b   #BIT7,&P2DIR
+                mov.w   #500,R12
+                call    #SYSTICK_delay_ms
+                bic.b   #BIT7,&P2DIR
+                ret
+                .endasmfunc
+
+                .text
+                .def    GNSS_timesync
+GNSS_timesync:
+; () -> (error@R12)
+                .asmfunc
+                clr.w   &time+6
+$2:             cmp.w   #9,&time+6
+                jlo     $2
+                ret
+                .endasmfunc
+
+                .text
+                .def    GNSS_hour
+GNSS_hour:
+; () -> (error@R12,hour@R13)
+                .asmfunc
+                clr.w   R12
+                mov.w   &time+0,R13
+                ret
+                .endasmfunc
+
+                .text
+                .def    GNSS_minute
+GNSS_minute:
+; () -> (error@R12,minute@R13)
+                .asmfunc
+                clr.w   R12
+                mov.w   &time+2,R13
+                ret
+                .endasmfunc
+
+                .text
+                .def    GNSS_second
+GNSS_second:
+; () -> (error@R12,second@R13)
+                .asmfunc
+                clr.w   R12
+                mov.w   &time+4,R13
+                ret
+                .endasmfunc
+
+                .text
+GNSS_transmit:
+; (cmd@R12) -> ()
+                .asmfunc
+LOOP?:          mov.b   @R12,R13
+                tst.b   R13
+                jz      WAIT_CPT?
+WAIT_TX?:       bit.b   #UCTXIFG_L,&UCA0IFG_L
+                jz      WAIT_TX?
+                mov.b   R13,&UCA0TXBUF_L
+                inc.w   R12
+                jmp     LOOP?
+WAIT_CPT?:      bit.b   #UCTXCPTIFG_L,&UCA0IFG_L
+                jz      WAIT_CPT?
+                ret
+                .endasmfunc
 
                 .sect   ".text:_isr"
                 .def    EUSCI_A0_ISR
@@ -248,7 +290,6 @@ $7:
                 clr.b   &time+3
                 clr.b   &time+5
                 inc.w   &time+6
-                xor.b   #BIT3,&P1OUT
 $8:
                 cmp.b   #'$',&parser.buffer+2
                 jnz     $0
@@ -258,3 +299,5 @@ $8:
 $0:
                 reti
 
+                .sect   EUSCI_A0_VECTOR
+                .word   EUSCI_A0_ISR

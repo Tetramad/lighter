@@ -13,12 +13,8 @@ RTC_sleep_ms:   .asmfunc
                 mov.w   R12,&RTCMOD
                 mov.w   &RTCIV,R3
                 mov.w   #RTCSS__VLOCLK|RTCPS__10|RTCSR_1|RTCIE_1,&RTCCTL
-                push    SR
-                eint
 $1:             tst.w   &done
                 jz      $1
-                dint
-                pop     SR
                 mov.w   #RTCSS__DISABLED|RTCPS__1|RTCSR_1|RTCIE_0,&RTCCTL
                 clr.w   R12
                 ret
@@ -38,12 +34,8 @@ $1:
                 mov.w   R12,&RTCMOD
                 mov.w   &RTCIV,R3
                 mov.w   #RTCSS__VLOCLK|RTCPS__1000|RTCSR_1|RTCIE_1,&RTCCTL
-                push    SR
-                eint
 $2:             tst.w   &done
                 jz      $2
-                dint
-                pop     SR
                 mov.w   #RTCSS__DISABLED|RTCPS__1|RTCSR_1|RTCIE_0,&RTCCTL
                 clr.w   R12
                 ret

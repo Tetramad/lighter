@@ -27,13 +27,13 @@ PROGRAMMER = MSP430Flasher
 
 OBJS = \
 	   main.obj \
-	   busy_wait.obj \
 	   eusci_a.obj \
 	   timer_b0.obj \
-	   sleep.obj \
+	   systick.obj \
 	   light_control.obj \
 	   user_input.obj \
-	   datatable.obj
+	   datatable.obj \
+	   gnss.obj
 
 all: main.txt main.dis.txt
 
