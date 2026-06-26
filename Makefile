@@ -27,8 +27,6 @@ PROGRAMMER = MSP430Flasher
 
 OBJS = \
 	   main.obj \
-	   eusci_a.obj \
-	   timer_b0.obj \
 	   systick.obj \
 	   light_control.obj \
 	   user_input.obj \

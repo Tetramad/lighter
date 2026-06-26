@@ -2,146 +2,112 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
-                .include "timer_b0.inc"
                 .include "systick.inc"
 
-                .bss    current,2,2
-
                 .text
-                .def    LCNTL_init
-LCNTL_init:
+                .def    LC_begin
+LC_begin:
+; () -> ()
                 .asmfunc
-                call    #Timer_B0_init
+                bic.w   #MC,&TB0CTL
+                bis.w   #TBCLR,&TB0CTL
+                mov.w   #TBCLGRP_0|CNTL__16|TBSSEL__SMCLK|ID__1|MC__STOP|TBIE_0|TBIFG_0,&TB0CTL
+                mov.w   #99,&TB0CCR0
+                mov.w   #0,&TB0CCR1
+                mov.w   #CLLD_1|OUTMOD_7,&TB0CCTL1
+                mov.w   #100,&TB0CCR2
+                mov.w   #CLLD_1|OUTMOD_3,&TB0CCTL2
+
+                bic.b   #BIT6|BIT7,&P1REN
+                bis.b   #BIT6|BIT7,&P1DIR
+                bis.b   #BIT6|BIT7,&P1SEL1
+                bis.w   #MC__UP,&TB0CTL
+
                 bis.b   #BIT1,&P1OUT
-                bis.b   #BIT1,&P1DIR
-                mov.w   #0,&current
-                mov.w   #0,R12
-                mov.w   #0,R13
-                call    #Timer_B0_set_duty
-                call    #Timer_B0_enable_output
                 ret
                 .endasmfunc
 
                 .text
-                .def    LCNTL_deinit
-LCNTL_deinit:
+                .def    LC_end
+LC_end:
+; () -> ()
                 .asmfunc
-                call    #Timer_B0_disable_output
-                mov.w   #0,R12
-                mov.w   #0,R13
-                call    #Timer_B0_set_duty
-                bic.b   #BIT1,&P1DIR
                 bic.b   #BIT1,&P1OUT
+
+                bic.w   #MC,&TB0CTL
+                bic.b   #BIT6|BIT7,&P1SEL1
+                bic.b   #BIT6|BIT7,&P1DIR
+                bis.b   #BIT6|BIT7,&P1REN
+
                 ret
                 .endasmfunc
 
                 .text
-                .def    LCNTL_transition
-LCNTL_transition:
+                .def    LC_transit
+LC_transit:
+; (warm_step@R12,cold_step@R13) -> (error@R12)
                 .asmfunc
-; (target->R12, step->R13, interval_ms->R14) -> (error->R12)
-                push    R4
-                push    R5
-                push    R6
-                push    R7
-                .asg    R4,flags
+                push.w  R4
+                push.w  R5
+                push.w  R6
+
                 mov.w   R12,R5
-                .asg    R5,target
                 mov.w   R13,R6
-                .asg    R6,step
-                mov.w   R14,R7
-                .asg    R7,interval_ms
+                inv.w   R6
 
-                cmp.w   #201,target
-                jhs     error?
-                tst.w   step
-                jz      error?
-                tst.w   interval_ms
-                jz      error?
+stepping?:      clr.w   R4
+                tst.w   R5
+                jn      warm_downward?
+warm_upward?:   cmp.w   #100,&TB0CCR1
+                jc      warm_stepping_complete?
+                inc.w   &TB0CCR1
+                bis.w   #BIT0,R4
+                jmp     warm_stepping_complete?
+warm_downward?: cmp.w   #1,&TB0CCR1
+                jnc     warm_stepping_complete?
+                dec.w   &TB0CCR1
+                bis.w   #BIT0,R4
+                jmp     warm_stepping_complete?
+warm_stepping_complete?:
 
-                clr.w   flags
-                tst.w   step ; N or notN
-                bit.w   #N,SR
-                adc.w   flags
-                cmp.w   target,&current ; hs/C or lo/notC
-                jnz     $2
-                jmp     end?
-$2:
-                ; C(0) + N(0) | C(1) + N(1)
-                ; flags.0 => direction validity
-                ; flags.1 => direction up(0)/down(1) (if valid).
-                ;            same as N state after "tst.w step".
-                adc.w   flags
-                bit.w   #BIT0,flags
-                jnz     error?
+                tst.w   R6
+                jn      cold_downward?
+cold_upward?:   cmp.w   #100,&TB0CCR2
+                jc      cold_stepping_complete?
+                inc.w   &TB0CCR2
+                bis.w   #BIT0,R4
+                jmp     cold_stepping_complete?
+cold_downward?: cmp.w   #1,&TB0CCR2
+                jnc     cold_stepping_complete?
+                dec.w   &TB0CCR2
+                bis.w   #BIT0,R4
+                jmp     cold_stepping_complete?
+cold_stepping_complete?:
 
-loop?:
-                add.w   step,&current
-                bit.w   #BIT1,flags
-                jz      $1
-                jmp     $3
+                delay   #100
+                tst.w   R4
+                jnz     stepping?
 
-$1:
-                ; upward
-                cmp.w   &current,target
-                jc      $5
-                mov.w   target,&current
-                jmp     $5
-
-$3:
-                ; downward
-                cmp.w   target,&current
-                jc      $5
-                mov.w   target,&current
-                jmp     $5
-
-$5:
-                ; Total: 0~100/101~200
-                ; Warm:  0~ 50/ 49~  0
-                ; Cold:  0~  0/  1~ 50
-                cmp.w   #101,&current
-                jhs     $6
-                ; Total in [0, 100]
-                mov.w   &current,R12
-                clr.w   R13
-                call    #Timer_B0_set_duty
-                tst.w   R12
-                jn      error?
-                jmp     $7
-$6:
-                ; Total in [101~200]
-                mov.w   #200,R12
-                sub.w   &current,R12
-                mov.w   &current,R13
-                sub.w   #100,R13
-                call    #Timer_B0_set_duty
-                tst.w   R12
-                jn      error?
-                jmp     $7
-
-$7:
-                mov.w   interval_ms,R12
-                call    #SYSTICK_delay_ms
-
-                cmp.w   &current,target
-                jnz     loop?
-
-                .unasg  flags
-                .unasg  target
-                .unasg  step
-                .unasg  interval_ms
-end?:
                 mov.w   #0,R12
-                pop     R7
-                pop     R6
-                pop     R5
-                pop     R4
+                pop.w   R6
+                pop.w   R5
+                pop.w   R4
                 ret
-error?:
-                mov.w   #-1,R12
-                pop     R7
-                pop     R6
-                pop     R5
-                pop     R4
+
+error?:         mov.w   #-1,R12
+                pop.w   R6
+                pop.w   R5
+                pop.w   R4
+                ret
+                .endasmfunc
+
+                .text
+                .def    LC_power_init
+LC_power_init:
+; () -> ()
+                .asmfunc
+                bic.b   #BIT1,&P1REN
+                bic.b   #BIT1,&P1OUT
+                bis.b   #BIT1,&P1DIR
                 ret
                 .endasmfunc

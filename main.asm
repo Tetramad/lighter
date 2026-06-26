@@ -5,6 +5,7 @@
                 .include "user_input.inc"
                 .include "gnss.inc"
                 .include "systick.inc"
+                .include "light_control.inc"
 
                 .def    RESET
 
@@ -35,6 +36,7 @@ config_GPIO:
 
                 call    #GNSS_wakeup_init
                 call    #GNSS_reset_init
+                call    #LC_power_init
 
                 bic.b   #BIT0,&P2OUT
                 bis.b   #BIT0,&P2DIR
@@ -43,14 +45,34 @@ config_GPIO:
 main:
                 eint
                 call    #GNSS_reset
-                mov.w   #1000,R12
-                call    #SYSTICK_delay_ms
+                delay   #1000
 
+main_loop:
                 call    #GNSS_begin
                 call    #GNSS_timesync
                 call    #GNSS_end
 
-main_loop:
+                call    #LC_begin
+                mov.w   #LC_STEP_ON,R12
+                mov.w   #LC_STEP_OFF,R13
+                call    #LC_transit
+                mov.w   #LC_STEP_OFF,R12
+                mov.w   #LC_STEP_ON,R13
+                call    #LC_transit
+                mov.w   #LC_STEP_ON,R12
+                mov.w   #LC_STEP_OFF,R13
+                call    #LC_transit
+                mov.w   #LC_STEP_OFF,R12
+                mov.w   #LC_STEP_OFF,R13
+                call    #LC_transit
+                call    #LC_end
+
+                bis.b   #BIT0,&P2OUT
+                delay   #1000
+                bic.b   #BIT0,&P2OUT
+                delay   #500
+                bis.b   #BIT0,&P2OUT
+                delay   #1000
                 jmp     main_loop
 
 error?:
