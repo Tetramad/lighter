@@ -4,7 +4,7 @@
                 ; Light Control -> LC
 
                 .global LC_begin
-                ; () -> ()
+                ; (warm_initial@R12,cold_initial@R13) -> ()
                 .global LC_end
                 ; () -> ()
                 .global LC_transit

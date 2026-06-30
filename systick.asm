@@ -53,6 +53,14 @@ $1:             mov.w   &systick+0,R5
                 ret
                 .endasmfunc
 
+                .text
+                .def    SYSTICK_elapse
+SYSTICK_elapse:
+; (current@R12,target@R13) -> ()
+                .asmfunc
+                ret
+                .endasmfunc
+
                 .sect   ".text:_isr"
 RTC_ISR:
                 add.w   &RTCIV,PC

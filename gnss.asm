@@ -3,6 +3,7 @@
 
                 .cdecls C,LIST,"msp430.h"
                 .include "systick.inc"
+                .include "datatable.inc"
 
 PARSER_STRUCT:  .struct
 run_length:     .uchar
@@ -125,6 +126,43 @@ GNSS_timesync:
                 clr.w   &time+6
 $2:             cmp.w   #9,&time+6
                 jlo     $2
+                call    #SYSTICK_get
+                push.w  R12
+                mov.w   #DT_GNSS_TICK_H,R12
+                call    #DT_store
+                pop.w   R13
+                mov.w   #DT_GNSS_TICK_L,R12
+                call    #DT_store
+                mov.w   #DT_GNSS_HH,R12
+                mov.w   &time+0,R13
+                call    #DT_store
+                mov.w   #DT_GNSS_MM,R12
+                mov.w   &time+2,R13
+                call    #DT_store
+                mov.w   #DT_GNSS_SS,R12
+                mov.w   &time+4,R13
+                call    #DT_store
+                ret
+                .endasmfunc
+
+                .text
+                .def    GNSS_reftick
+GNSS_reftick:
+; () -> (error@R12,tick_l@R13,tick_h@R14)
+                .asmfunc
+                mov.w   #DT_GNSS_TICK_H,R12
+                call    #DT_load
+                tst.w   R12
+                jn      error?
+                push.w  R13
+                mov.w   #DT_GNSS_TICK_L,R12
+                call    #DT_load
+                pop.w   R14
+                tst.w   R12
+                jn      error?
+                ret
+error?:
+                mov.w   #-1,R12
                 ret
                 .endasmfunc
 
@@ -133,8 +171,8 @@ $2:             cmp.w   #9,&time+6
 GNSS_hour:
 ; () -> (error@R12,hour@R13)
                 .asmfunc
-                clr.w   R12
-                mov.w   &time+0,R13
+                mov.w   #DT_GNSS_HH,R12
+                call    #DT_load
                 ret
                 .endasmfunc
 
@@ -143,8 +181,8 @@ GNSS_hour:
 GNSS_minute:
 ; () -> (error@R12,minute@R13)
                 .asmfunc
-                clr.w   R12
-                mov.w   &time+2,R13
+                mov.w   #DT_GNSS_MM,R12
+                call    #DT_load
                 ret
                 .endasmfunc
 
@@ -153,8 +191,8 @@ GNSS_minute:
 GNSS_second:
 ; () -> (error@R12,second@R13)
                 .asmfunc
-                clr.w   R12
-                mov.w   &time+4,R13
+                mov.w   #DT_GNSS_SS,R12
+                call    #DT_load
                 ret
                 .endasmfunc
 

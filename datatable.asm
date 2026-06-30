@@ -26,3 +26,10 @@ DT_load:
                 clr.w   R13
                 ret
                 .endasmfunc
+
+                ; shh:mm.q
+                ; 0000 0000 0000 0000 b
+                ;                  00 -> quater minutes
+                ;           1111 00   -> minutes
+                ;    1 1000            -> hours
+                ; s00h hhhh mmmm mmqq b

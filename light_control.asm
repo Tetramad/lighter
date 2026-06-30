@@ -7,15 +7,18 @@
                 .text
                 .def    LC_begin
 LC_begin:
-; () -> ()
+; (warm_initial@R12,cold_initial@R13) -> ()
                 .asmfunc
+                sub.w   #100,R13
+                inv.w   R13
+                inc.w   R13
                 bic.w   #MC,&TB0CTL
                 bis.w   #TBCLR,&TB0CTL
                 mov.w   #TBCLGRP_0|CNTL__16|TBSSEL__SMCLK|ID__1|MC__STOP|TBIE_0|TBIFG_0,&TB0CTL
                 mov.w   #99,&TB0CCR0
-                mov.w   #0,&TB0CCR1
+                mov.w   R12,&TB0CCR1
                 mov.w   #CLLD_1|OUTMOD_7,&TB0CCTL1
-                mov.w   #100,&TB0CCR2
+                mov.w   R13,&TB0CCR2
                 mov.w   #CLLD_1|OUTMOD_3,&TB0CCTL2
 
                 bic.b   #BIT6|BIT7,&P1REN

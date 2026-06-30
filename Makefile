@@ -31,7 +31,8 @@ OBJS = \
 	   light_control.obj \
 	   user_input.obj \
 	   datatable.obj \
-	   gnss.obj
+	   gnss.obj \
+	   muldivmod.obj
 
 all: main.txt main.dis.txt
 
