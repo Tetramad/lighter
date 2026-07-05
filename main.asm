@@ -7,6 +7,7 @@
                 .include "systick.inc"
                 .include "light_control.inc"
                 .include "muldivmod.inc"
+                .include "indicator.inc"
 
                 .def    RESET
 
@@ -36,12 +37,10 @@ wait_fll_lock?: bit.w   #FLLUNLOCK,&CSCTL7
 
 ; Initialization
                 call    #SYSTICK_init
+                call    #IND_init
                 call    #GNSS_wakeup_init
                 call    #GNSS_reset_init
                 call    #LC_power_init
-
-                bic.b   #BIT0,&P2OUT
-                bis.b   #BIT0,&P2DIR
 
                 bic.w   #LOCKLPM5,&PM5CTL0
                 eint
@@ -225,17 +224,8 @@ sunset:
 
 error?:
                 dint
-                bis.b   #BIT0,&P2OUT
-                tst.w   R12
-                jge     hang?
-                push.w  R12
-                bis.b   #BIT0,&P2OUT
-                delay   #1000
-                bic.b   #BIT0,&P2OUT
-                delay   #1000
-                pop.w   R12
-                inc.w   R12
-                jmp     error?
+                call    #IND_error
+                jmp     hang?
 
 hang?:          jmp     hang?
 
