@@ -155,3 +155,21 @@ processed?:
                 ret
                 ret
                 .endasmfunc
+
+                .text
+                .def    uhimul24
+uhimul24:
+; (x@R12_L) -> (y@R12)
+                .asmfunc
+                push.w  R4
+                mov.b   R12,R4
+                .loop   3
+                rla.w   R4
+                .endloop
+                mov.w   R4,R12
+                rla.w   R4
+                add.w   R4,R12
+
+                pop.w   R4
+                ret
+                .endasmfunc

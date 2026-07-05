@@ -89,7 +89,7 @@ error?:
                 .text
                 .def    UIN_timezone
 UIN_timezone:
-; () -> (error@R12, timezone_index@R13)
+; () -> (error@R12, timezone_shhmmq@R13)
                 .asmfunc
                 mov.w   #DT_UIN_TZ,R12
                 call    #DT_load
@@ -97,6 +97,11 @@ UIN_timezone:
                 jl      error?
 
                 clr.w   R12
+                ; TODO: remove if properly implemented.
+                ; timezone: +09:30
+                ; shh:mm.q: +09:30.0
+                ; binary: 0 00 01001 011110 00
+                mov.w   #0000100101111000b,R12
                 ret
 error?:
                 mov.w   #-1,R12
@@ -106,7 +111,7 @@ error?:
                 .text
                 .def    UIN_sunrise
 UIN_sunrise:
-; () -> (error@R12, sunrise_index@R13)
+; () -> (error@R12, sunrise_shhmmq@R13)
                 .asmfunc
                 mov.w   #DT_UIN_SR,R12
                 call    #DT_load
@@ -114,6 +119,11 @@ UIN_sunrise:
                 jl      error?
 
                 clr.w   R12
+                ; TODO: remove if properly implemented.
+                ; sunrise: 07:00.0+09:30 -> 21:30.0Z
+                ; shh:mm.q: +21:30.0
+                ; binary: 0 00 10101 011110 00
+                mov.w   #0001010101111000b,R12
                 ret
 error?:
                 mov.w   #-1,R12
@@ -123,7 +133,7 @@ error?:
                 .text
                 .def    UIN_sunset
 UIN_sunset:
-; () -> (error@R12, sunset_index@R13)
+; () -> (error@R12, sunset_shhmmq@R13)
                 .asmfunc
                 mov.w   #DT_UIN_SS,R12
                 call    #DT_load
@@ -131,6 +141,13 @@ UIN_sunset:
                 jl      error?
 
                 clr.w   R12
+                ; TODO: remove if properly implemented.
+                ; sunset: 18:30.0+09:30 -> 09:00.0Z
+                ; shh:mm.q: +09:00.0
+                ; binary: 0 00 01001 000000 00
+                ; sunset: 22:30.0+09:30 -> 13:00.0Z
+                ; binary: 0 00 01101 000000 00
+                mov.w   #0000110100000000b,R12
                 ret
 error?:
                 mov.w   #-1,R12

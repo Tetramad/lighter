@@ -185,13 +185,13 @@ quater_0:
                 jmp     error?
 
 wait_sunset:
-                mov.w   R6,R12
-                mov.w   R4,R13
+                mov.w   R4,R12
+                mov.w   R6,R13
                 call    #SYSTICK_elapse
                 jmp     sunset
 wait_sunrise:
-                mov.w   R5,R12
-                mov.w   R4,R13
+                mov.w   R4,R12
+                mov.w   R5,R13
                 call    #SYSTICK_elapse
                 jmp     sunrise
 

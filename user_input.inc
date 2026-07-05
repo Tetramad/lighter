@@ -12,8 +12,8 @@
                 ; () -> (error@R12)
 
                 .global UIN_timezone
-                ; () -> (error@R12, timezone_index@R13)
+                ; () -> (error@R12, timezone_shhmmq@R13)
                 .global UIN_sunrise
-                ; () -> (error@R12, sunrise_index@R13)
+                ; () -> (error@R12, sunrise_shhmmq@R13)
                 .global UIN_sunset
-                ; () -> (error@R12, sunset_index@R13)
+                ; () -> (error@R12, sunset_shhmmq@R13)
