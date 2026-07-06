@@ -112,3 +112,63 @@ last_3space?:
                 ret
                 .endasmfunc
 
+                .text
+                .def    IND_morse_digit
+IND_morse_digit:
+; (digit@R12) -> ()
+                .asmfunc
+                push.w  R4
+                mov.w   R12,R4
+
+                clr.w   R14
+                clr.w   R15
+
+                mov.w   #0001010101010101b,R12
+                clr.w   R13                     ; {HH}
+                cmp.w   #10,R4
+                jc      out_morse?
+                mov.w   #0111011101110111b,R12
+                mov.w   #0000000000000001b,R13  ; 9
+                cmp.w   #9,R4
+                jc      out_morse?
+                mov.w   #0101011101110111b,R12
+                clr.w   R13                     ; 8
+                cmp.w   #8,R4
+                jc      out_morse?
+                mov.w   #0001010101110111b,R12
+                clr.w   R13                     ; 7
+                cmp.w   #7,R4
+                jc      out_morse?
+                mov.w   #0000010101010111b,R12
+                clr.w   R13                     ; 6
+                cmp.w   #6,R4
+                jc      out_morse?
+                mov.w   #0000000101010101b,R12
+                clr.w   R13                     ; 5
+                cmp.w   #5,R4
+                jc      out_morse?
+                mov.w   #0000011101010101b,R12
+                clr.w   R13                     ; 4
+                cmp.w   #4,R4
+                jc      out_morse?
+                mov.w   #0001110111010101b,R12
+                clr.w   R13                     ; 3
+                cmp.w   #3,R4
+                jc      out_morse?
+                mov.w   #0111011101110101b,R12
+                clr.w   R13                     ; 2
+                cmp.w   #2,R4
+                jc      out_morse?
+                mov.w   #1101110111011101b,R12
+                mov.w   #0000000000000001b,R13
+                cmp.w   #1,R4                   ; 1
+                jc      out_morse?
+                mov.w   #0111011101110111b,R12
+                mov.w   #0000000000000111b,R13  ; 0
+
+out_morse?:
+                call    #IND_morse
+
+                pop.w   R4
+                ret
+                .endasmfunc

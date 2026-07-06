@@ -98,10 +98,10 @@ UIN_timezone:
 
                 clr.w   R12
                 ; TODO: remove if properly implemented.
-                ; timezone: +09:30
-                ; shh:mm.q: +09:30.0
-                ; binary: 0 00 01001 011110 00
-                mov.w   #0000100101111000b,R12
+                ; timezone: +09:00
+                ; shh:mm.q: +09:00.0
+                ; binary: 0 00 01001 000000 00
+                mov.w   #0000100100000000b,R12
                 ret
 error?:
                 mov.w   #-1,R12
@@ -118,12 +118,12 @@ UIN_sunrise:
                 tst.w   R12
                 jl      error?
 
-                clr.w   R12
                 ; TODO: remove if properly implemented.
-                ; sunrise: 07:00.0+09:30 -> 21:30.0Z
-                ; shh:mm.q: +21:30.0
-                ; binary: 0 00 10101 011110 00
-                mov.w   #0001010101111000b,R12
+                ; sunrise: 07:00.0+09:00 -> 22:00.0Z
+                ; shh:mm.q: +22:00.0
+                ; binary: 0 00 10110 000000 00
+                mov.w   #0001011000000000b,R13
+                clr.w   R12
                 ret
 error?:
                 mov.w   #-1,R12
@@ -140,14 +140,12 @@ UIN_sunset:
                 tst.w   R12
                 jl      error?
 
-                clr.w   R12
                 ; TODO: remove if properly implemented.
-                ; sunset: 18:30.0+09:30 -> 09:00.0Z
-                ; shh:mm.q: +09:00.0
-                ; binary: 0 00 01001 000000 00
-                ; sunset: 22:30.0+09:30 -> 13:00.0Z
-                ; binary: 0 00 01101 000000 00
-                mov.w   #0000110100000000b,R12
+                ; sunset: 18:30.0+09:00 -> 09:30.0Z
+                ; shh:mm.q: +09:30.0
+                ; binary: 0 00 01001 011110 00
+                mov.w   #0000100101111000b,R13
+                clr.w   R12
                 ret
 error?:
                 mov.w   #-1,R12

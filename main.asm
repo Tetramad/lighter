@@ -96,18 +96,18 @@ wait_next_lighting:
 
                 add.w   R14,R7
                 cmp.w   #60,R7
-                jc      no_second_carry?
+                jnc     second_borrow?
                 sub.w   #60,R7
                 inc.w   R13
-no_second_carry?:
+second_borrow?:
                 add.w   R13,R6
                 cmp.w   #60,R6
-                jc      no_minute_carry?
+                jnc     minute_borrow?
                 sub.w   #60,R6
                 inc.w   R12
-no_minute_carry?:
-                add.w   R12,R5
-                adc.w   R4
+minute_borrow?:
+                add.w   R12,R4
+                adc.w   R5
 
                 mov.w   R4,R12
                 mov.w   R5,R13
@@ -116,17 +116,16 @@ no_minute_carry?:
                 ; @R5: hour
                 ; @R6: minute
                 ; @R7: second
-                clr.w   R4
                 and.w   #0000000000011111b,R5
                 .loop 8
                 rla.w   R5
                 .endloop
-                bis.w   R5,R4
+                mov.w   R5,R4
                 and.w   #0000000000111111b,R6
                 .loop 2
                 rla.w   R6
                 .endloop
-                bis.w   R6,R4
+                add.w   R6,R4
                 cmp.w   #45,R7
                 jc      quater_3
                 cmp.w   #30,R7

@@ -9,3 +9,5 @@
                 ; (error@R12) -> ()
                 .global IND_morse
                 ; (u64_0@R12,u64_1@R13,u64_2@R14,u64_3@R15) -> ()
+                .global IND_morse_digit
+                ; (digit@R12) -> ()
