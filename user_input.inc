@@ -3,6 +3,8 @@
 
                 ; User INput -> UIN
 
+                .global UIN_init
+                ; () -> ()
                 .global UIN_begin
                 ; () -> ()
                 .global UIN_end

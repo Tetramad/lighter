@@ -38,6 +38,7 @@ wait_fll_lock?: bit.w   #FLLUNLOCK,&CSCTL7
 ; Initialization
                 call    #SYSTICK_init
                 call    #IND_init
+                call    #UIN_init
                 call    #GNSS_wakeup_init
                 call    #GNSS_reset_init
                 call    #LC_power_init

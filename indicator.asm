@@ -5,7 +5,7 @@
                 .include "systick.inc"
 
                 .asg    0FFFFh,IND_ERROR_HALF_PERIOD
-                .asg    100,IND_MORSE_TICK
+                .asg    50,IND_MORSE_TICK
 
                 .text
                 .def    IND_init
@@ -31,7 +31,7 @@ IND_error:
                 inc.w   R12
 loop?:
                 cmp.w   #1,R12
-                jn      done?
+                jl      done?
                 bis.b   #BIT0,&P2DIR
                 mov.w   #IND_ERROR_HALF_PERIOD,R4
 active_delay_loop?:
@@ -124,47 +124,48 @@ IND_morse_digit:
                 clr.w   R15
 
                 mov.w   #0001010101010101b,R12
-                clr.w   R13                     ; {HH}
+                clr.w   R13
                 cmp.w   #10,R4
-                jc      out_morse?
+                jc      out_morse?              ; {HH}
                 mov.w   #0111011101110111b,R12
-                mov.w   #0000000000000001b,R13  ; 9
+                mov.w   #0000000000000001b,R13
                 cmp.w   #9,R4
-                jc      out_morse?
+                jc      out_morse?              ; 9
                 mov.w   #0101011101110111b,R12
-                clr.w   R13                     ; 8
+                clr.w   R13
                 cmp.w   #8,R4
-                jc      out_morse?
+                jc      out_morse?              ; 8
                 mov.w   #0001010101110111b,R12
-                clr.w   R13                     ; 7
+                clr.w   R13 
                 cmp.w   #7,R4
-                jc      out_morse?
+                jc      out_morse?              ; 7
                 mov.w   #0000010101010111b,R12
-                clr.w   R13                     ; 6
+                clr.w   R13
                 cmp.w   #6,R4
-                jc      out_morse?
+                jc      out_morse?              ; 6
                 mov.w   #0000000101010101b,R12
-                clr.w   R13                     ; 5
+                clr.w   R13
                 cmp.w   #5,R4
-                jc      out_morse?
+                jc      out_morse?              ; 5
                 mov.w   #0000011101010101b,R12
-                clr.w   R13                     ; 4
+                clr.w   R13
                 cmp.w   #4,R4
-                jc      out_morse?
+                jc      out_morse?              ; 4
                 mov.w   #0001110111010101b,R12
-                clr.w   R13                     ; 3
+                clr.w   R13
                 cmp.w   #3,R4
-                jc      out_morse?
+                jc      out_morse?              ; 3
                 mov.w   #0111011101110101b,R12
-                clr.w   R13                     ; 2
+                clr.w   R13
                 cmp.w   #2,R4
-                jc      out_morse?
+                jc      out_morse?              ; 2
                 mov.w   #1101110111011101b,R12
                 mov.w   #0000000000000001b,R13
-                cmp.w   #1,R4                   ; 1
-                jc      out_morse?
+                cmp.w   #1,R4
+                jc      out_morse?              ; 1
                 mov.w   #0111011101110111b,R12
-                mov.w   #0000000000000111b,R13  ; 0
+                mov.w   #0000000000000111b,R13
+                                                ; 0
 
 out_morse?:
                 call    #IND_morse

@@ -6,7 +6,7 @@
                 .text
                 .def    ulidiv1000
 ulidiv1000:
-; (x_l@R12,x_h@R13) -> (qout_l@R12,qout_h@R13)
+; (u_l@R12,u_h@R13) -> (qout_l@R12,qout_h@R13)
                 .asmfunc
                 push.w  R4
                 push.w  R5
@@ -56,7 +56,7 @@ processed?:
                 .text
                 .def    ulidivmod60
 ulidivmod60:
-; (x_l@R12,x_h@R13) -> (qout_l@R12,qout_h@R13,rem@R14)
+; (u_l@R12,u_h@R13) -> (qout_l@R12,qout_h@R13,rem@R14)
                 .asmfunc
                 push.w  R4
                 push.w  R5
@@ -107,7 +107,7 @@ processed?:
                 .text
                 .def    ulidivmod24
 ulidivmod24:
-; (x_l@R12,x_h@R13) -> (qout_l@R12,qout_h@R13,rem@R14)
+; (u_l@R12,u_h@R13) -> (qout_l@R12,qout_h@R13,rem@R14)
                 .asmfunc
                 push.w  R4
                 push.w  R5
@@ -159,7 +159,7 @@ processed?:
                 .text
                 .def    uhimul24
 uhimul24:
-; (x@R12_L) -> (y@R12)
+; (u@R12_L) -> (y@R12)
                 .asmfunc
                 push.w  R4
                 mov.b   R12,R4
@@ -169,6 +169,65 @@ uhimul24:
                 mov.w   R4,R12
                 rla.w   R4
                 add.w   R4,R12
+
+                pop.w   R4
+                ret
+                .endasmfunc
+
+                .text
+                .def    utobcd
+utobcd:
+; (u@R12) -> (bcd_l@R12,bcd_h@R13)
+                .asmfunc
+                push.w  R4
+                mov.w   R12,R4
+                clr.w   R12
+                clr.w   R13
+
+d5_loop?:
+                cmp.w   #10000,R4
+                jnc     d5_done?
+                sub.w   #10000,R4
+                clrc
+                dadd.w  #0001h,R13
+                jmp     d5_loop?
+d5_done?:
+
+d4_loop?:
+                cmp.w   #1000,R4
+                jnc     d4_done?
+                sub.w   #1000,R4
+                clrc
+                dadd.w  #1000h,R12
+                jmp     d4_loop?
+d4_done?:
+
+d3_loop?:
+                cmp.w   #100,R4
+                jnc     d3_done?
+                sub.w   #100,R4
+                clrc
+                dadd.w  #100h,R12
+                jmp     d3_loop?
+d3_done?:
+
+d2_loop?:
+                cmp.w   #10,R4
+                jnc     d2_done?
+                sub.w   #10,R4
+                clrc
+                dadd.w  #10h,R12
+                jmp     d2_loop?
+d2_done?:
+
+d1_loop?:
+                cmp.w   #1,R4
+                jnc     d1_done?
+                sub.w   #1,R4
+                clrc
+                dadd.w  #1h,R12
+                jmp     d1_loop?
+d1_done?:
 
                 pop.w   R4
                 ret
