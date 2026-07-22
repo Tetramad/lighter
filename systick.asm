@@ -2,7 +2,7 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
-                .include "muldivmod.inc"
+                .include "math.inc"
                 .include "systick.inc"
 
                 .bss    systick,4,2
@@ -26,7 +26,7 @@ SYSTICK_init:
                 .text
                 .def    SYSTICK_get
 SYSTICK_get:
-; () -> (systick_L@R12,systick_H@R13)
+; () -> (systick_l@R12,systick_h@R13)
                 .asmfunc
                 bic.w   #RTCIE,&RTCCTL
                 mov.w   &systick+0,R12

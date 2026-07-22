@@ -5,7 +5,7 @@
                 ; () -> ()
 
                 .global SYSTICK_get
-                ; () -> (systick_L@R12,systick_H@R13)
+                ; () -> (systick_l@R12,systick_h@R13)
 
                 .global SYSTICK_delay_ms
                 ; (delay_ms@R12) -> ()

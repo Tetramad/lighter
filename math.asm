@@ -4,6 +4,33 @@
                 .cdecls C,LIST,"msp430.h"
 
                 .text
+                .def    ulimul60
+ulimul60:
+; (ul@[R13:R12]) -> (ul@[R13:R12])
+                .asmfunc
+                ; 60d = 0011'1100b
+                mov.w   R12,R14
+                mov.w   R13,R15
+
+                .loop   2
+                rla.w   R14
+                rlc.w   R15
+                .endloop
+
+                mov.w   R14,R12
+                mov.w   R15,R13
+
+                .loop   3
+                rla.w   R14
+                rlc.w   R15
+                add.w   R14,R12
+                addc.w  R15,R13
+                .endloop
+
+                ret
+                .endasmfunc
+
+                .text
                 .def    ulidiv1000
 ulidiv1000:
 ; (u_l@R12,u_h@R13) -> (qout_l@R12,qout_h@R13)
@@ -230,5 +257,135 @@ d1_loop?:
 d1_done?:
 
                 pop.w   R4
+                ret
+                .endasmfunc
+
+                .text
+                .def    ss_to_shhmmq
+ss_to_shhmmq:
+; (ss@[R13:R12]) -> (error@R12,shhmmq@R13)
+                .asmfunc
+                call    #ulidivmod60 ; -> (quot@[R13:R12],rem@R14)
+                push.w  R14 ; seconds
+                call    #ulidivmod60 ; -> (quot@[R13:R12],rem@R14)
+                push.w  R14 ; minutes
+                call    #ulidivmod24 ; -> (quot@[R13:R12],rem@R14)
+                push.w  R14 ; hours
+
+                .asg    0(SP),hours
+                .asg    2(SP),minutes
+                .asg    4(SP),seconds
+
+                tst.w   hours
+                jn      error?
+                cmp.w   #24,hours
+                jc      error?
+                cmp.w   #60,minutes
+                jc      error?
+                cmp.w   #60,seconds
+                jc      error?
+
+                clr.w   R13
+                cmp.w   #45,seconds
+                jc      quater3?
+                cmp.w   #30,seconds
+                jc      quater2?
+                cmp.w   #15,seconds
+                jc      quater1?
+                jmp     quater0?
+
+quater3?:       inc.w   R13
+quater2?:       inc.w   R13
+quater1?:       inc.w   R13
+quater0?:
+
+                rla.w   minutes
+                rla.w   minutes
+                add.w   minutes,R13
+
+                swpb    hours
+                add.w   hours,R13
+
+                .unasg  hours
+                .unasg  minutes
+                .unasg  seconds
+
+                pop.w   R3
+                pop.w   R3
+                pop.w   R3
+                clr.w   R12
+                ret
+
+error?:
+                pop.w   R3
+                pop.w   R3
+                pop.w   R3
+                mov.w   #-1,R12
+                ret
+                .endasmfunc
+
+                .text
+                .def    hhmmss_to_shhmmq
+hhmmss_to_shhmmq:
+; (hh@R12,mm@R13,ss@R14) -> (error@R12,shhmmq@R13)
+                .asmfunc
+                push.w  R14
+                push.w  R13
+                push.w  R12
+
+                .asg    0(SP),hh
+                .asg    2(SP),mm
+                .asg    4(SP),ss
+
+                mov.w   hh,R12
+                clr.w   R13
+                call    #ulimul60 ; (ul@[R13:R12]) -> (ul@[R13:R12])
+                add.w   mm,R12
+                adc.w   R13
+                call    #ulimul60 ; (ul@[R13:R12]) -> (ul@[R13:R12])
+                add.w   ss,R12
+                adc.w   R13
+                call    #ss_to_shhmmq ; (ss@[R13:R12]) -> (error@R12,shhmmq@R13)
+
+                .unasg  ss
+                .unasg  mm
+                .unasg  hh
+
+                pop.w   R3
+                pop.w   R3
+                pop.w   R3
+                ret
+                .endasmfunc
+
+                .text
+                .def    shhmmq_add
+shhmmq_add:
+; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
+                .asmfunc
+                ; assume(rhs.s == 0 && lhs.s == 0)
+                mov.w   R12,R14
+                mov.w   R13,R15
+
+                mov.b   R12,R12
+                mov.b   R13,R13
+                add.w   R12,R13
+                cmp.w   #(60<<2),R13
+                jc      not_overflow_minutes?
+                sub.w   #(60<<2),R13
+                add.w   #0100h,R14
+not_overflow_minutes?:
+                swpb    R14
+                mov.b   R14,R14
+                swpb    R15
+                mov.b   R15,R15
+
+                add.b   R14,R15
+                swpb    R15
+                cmp.w   #24,R15
+                jc      not_overflow_hours?
+                sub.w   #24,R15
+not_overflow_hours?:
+                add.w   R15,R13
+                mov.w   #0,R12
                 ret
                 .endasmfunc

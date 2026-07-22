@@ -2,11 +2,12 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
+                .include "main.inc"
                 .include "user_input.inc"
                 .include "gnss.inc"
                 .include "systick.inc"
                 .include "light_control.inc"
-                .include "muldivmod.inc"
+                .include "math.inc"
                 .include "indicator.inc"
 
                 .def    RESET
@@ -54,93 +55,54 @@ main:
 
                 call    #UIN_begin
                 call    #UIN_read_and_decode
-                tst.w   R12
-                jn      error?
+                tsterr  R12,on_error
                 call    #UIN_end
 
-main_loop:
-walltime_sync:
+main_loop?:
+walltime_sync?:
                 call    #GNSS_begin
                 call    #GNSS_timesync
                 call    #GNSS_end
 
-wait_next_lighting:
-                call    #GNSS_reftick
-                tst.w   R12
-                jn      error?
-                push.w  R13
-                push.w  R14
-                call    #SYSTICK_get
-                pop.w   R15
-                pop.w   R14
-                sub.w   R14,R12
-                subc.w  R15,R13 ; delta(t) in milliseconds @[R13:R12]
+wait_next_lighting?:
+                ; TODO:
+                ; assume(GNSS_reftick() <= SYSTICK_get())
+                ; which false after wrap-around
+                call    #GNSS_reftick ; -> (error@R12,tick_l@R13,tick_h@R14)
+                tsterr  R12,on_error
+                mov.w   R13,R4 ; tick_l@R4
+                mov.w   R14,R5 ; tick_h@R5
+                call    #SYSTICK_get ; -> (systick_l@R12,systick_h@R13)
+                mov.w   R12,R6 ; systick_l@R6
+                mov.w   R13,R7 ; systick_h@R7
+                ulisub  R4,R5,R6,R7 ; delta_ms@[R7:R6]
+                mov.w   R6,R12
+                mov.w   R7,R13
                 call    #ulidiv1000 ; seconds @[R13:R12]
-                call    #ulidivmod60 ; minutes @[R13:R12], seconds @[R14]
-                push.w  R14
-                call    #ulidivmod60 ; hours @[R13:R12], minutes @[R14]
-                push.w  R14
-                push.w  R13
-                push.w  R12
-                call    #GNSS_second
-                push.w  R13
-                call    #GNSS_minute
-                push.w  R13
-                call    #GNSS_hour
-                mov.w   R13,R12 ; GNSS_hour
-                pop.w   R13     ; GNSS_minute
-                pop.w   R14     ; GNSS_second
-                pop.w   R4      ; hour_l
-                pop.w   R5      ; hour_h
-                pop.w   R6      ; minute
-                pop.w   R7      ; second
+                call    #ss_to_shhmmq ; (ss@[R13:R12]) -> (error@R12,shhmmq@R13)
+                mov.w   R13,R4 ; delta_shhmmq@R4
 
-                add.w   R14,R7
-                cmp.w   #60,R7
-                jnc     second_borrow?
-                sub.w   #60,R7
-                inc.w   R13
-second_borrow?:
-                add.w   R13,R6
-                cmp.w   #60,R6
-                jnc     minute_borrow?
-                sub.w   #60,R6
-                inc.w   R12
-minute_borrow?:
-                add.w   R12,R4
-                adc.w   R5
+                call    #GNSS_second
+                mov.w   R13,R10 ; gnss_seconds@R10
+                call    #GNSS_minute
+                mov.w   R13,R9 ; gnss_minutes@R9
+                call    #GNSS_hour
+                mov.w   R13,R8 ; gnss_hours@R8
+                mov.w   R8,R12
+                mov.w   R9,R13
+                mov.w   R10,R14
+                call    #hhmmss_to_shhmmq ; -> (error@R12,shhmmq@R13)
+                tsterr  R12,on_error
+                mov.w   R13,R5 ; gnss_shhmmq@R5
+
+                ; delta_shhmmq@R4
+                ; gnss_shhmmq@R5
 
                 mov.w   R4,R12
                 mov.w   R5,R13
-                call    #ulidivmod24 ; qout @[R13:R12], hours @[R14]
-                mov.w   R14,R5
-                ; @R5: hour
-                ; @R6: minute
-                ; @R7: second
-                and.w   #0000000000011111b,R5
-                .loop 8
-                rla.w   R5
-                .endloop
-                mov.w   R5,R4
-                and.w   #0000000000111111b,R6
-                .loop 2
-                rla.w   R6
-                .endloop
-                add.w   R6,R4
-                cmp.w   #45,R7
-                jc      quater_3
-                cmp.w   #30,R7
-                jc      quater_2
-                cmp.w   #15,R7
-                jc      quater_1
-                jmp     quater_0
-
-                ; [0,15),[15,30),[30,45),[45,60)
-                ; 00     01      10      11
-quater_3:       inc.w   R4
-quater_2:       inc.w   R4
-quater_1:       inc.w   R4
-quater_0:
+                call    #shhmmq_add ; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
+                tsterr  R12,on_error
+                mov.w   R13,R4 ; result_shhmmq@R4
 
                 call    #UIN_sunrise
                 mov.w   R13,R5
@@ -181,7 +143,7 @@ quater_0:
                 jz      wait_sunrise
                 cmp.w   #000b,R7
                 jz      wait_sunrise
-                jmp     error?
+                jmp     on_error
 
 wait_sunset:
                 mov.w   R4,R12
@@ -206,7 +168,7 @@ sunrise:
                 call    #LC_transit
                 delay   #30000
                 call    #LC_end
-                jmp     wait_next_lighting
+                jmp     wait_next_lighting?
 
 sunset:
                 mov.w   #0,R12
@@ -220,9 +182,9 @@ sunset:
                 call    #LC_transit
                 delay   #30000
                 call    #LC_end
-                jmp     walltime_sync
+                jmp     walltime_sync?
 
-error?:
+on_error:
                 dint
                 call    #IND_error
                 jmp     hang?

@@ -43,12 +43,3 @@ error?:
                 clr.w   R13
                 ret
                 .endasmfunc
-
-                ; shh:mm.q (shhmmq)
-                ; 0000 0000 0000 0000 b
-                ;                  00 -> quater minutes
-                ;           1111 00   -> minutes
-                ;    1 1000           -> hours
-                ; 1                   -> sign
-                ;  00                 -> reserved(0 by default)
-                ; s00h hhhh mmmm mmqq b

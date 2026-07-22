@@ -32,7 +32,7 @@ OBJS = \
 	   user_input.obj \
 	   datatable.obj \
 	   gnss.obj \
-	   muldivmod.obj \
+	   math.obj \
 	   indicator.obj
 
 all: main.txt main.dis.txt
