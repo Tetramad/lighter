@@ -202,6 +202,31 @@ uhimul24:
                 .endasmfunc
 
                 .text
+                .def    uimul10
+uimul10:
+; (u@R12) -> (u@R12)
+                .asmfunc
+                rla.w   R12
+                push.w  R12
+                rla.w   R12
+                rla.w   R12
+                add.w   R12,0(SP)
+                pop.w   R12
+                ret
+                .endasmfunc
+
+                .text
+                .def    uimul16
+uimul16:
+; (u@R12) -> (u@R12)
+                .asmfunc
+                .loop 4
+                rla.w   R12
+                .endloop
+                ret
+                .endasmfunc
+
+                .text
                 .def    utobcd
 utobcd:
 ; (u@R12) -> (bcd_l@R12,bcd_h@R13)

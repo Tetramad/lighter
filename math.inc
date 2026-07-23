@@ -10,6 +10,11 @@
                 .global ulidivmod24
                 ; (u_l@R12,u_h@R13) -> (quot_l@R12,quot_h@R13,rem@R14)
 
+                .global uimul10
+                ; (u@R12) -> (u@R12)
+                .global uimul16
+                ; (u@R12) -> (u@R12)
+
                 .global uhimul24
                 ; (u@R12_L) -> (y@R12)
 

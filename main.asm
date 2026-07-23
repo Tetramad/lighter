@@ -61,7 +61,7 @@ main:
 main_loop?:
 walltime_sync?:
                 call    #GNSS_begin
-                call    #GNSS_timesync
+                call    #GNSS_timesync_v2
                 call    #GNSS_end
 
 wait_next_lighting?:
