@@ -227,6 +227,36 @@ uimul16:
                 .endasmfunc
 
                 .text
+                .def    uidivmod10
+uidivmod10:
+; (u@R12) -> (qout@R12,rem@R13)
+                .asmfunc
+                push.w  R4
+                push.w  R5
+
+                mov.w   #0A000h,R4
+                mov.w   #01000h,R5
+                mov.w   R12,R13
+                clr.w   R12
+
+loop_round?:
+                cmp.w   R4,R13
+                jnc     prepare_next_round?
+                sub.w   R4,R13
+                add.w   R5,R12
+prepare_next_round?:
+                clrc
+                rrc.w   R5
+                rrc.w   R4
+                tst.w   R5
+                jnz     loop_round?
+
+                pop.w   R5
+                pop.w   R4
+                ret
+                .endasmfunc
+
+                .text
                 .def    utobcd
 utobcd:
 ; (u@R12) -> (bcd_l@R12,bcd_h@R13)

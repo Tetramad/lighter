@@ -14,6 +14,8 @@
                 ; (u@R12) -> (u@R12)
                 .global uimul16
                 ; (u@R12) -> (u@R12)
+                .global uidivmod10
+                ; (u@R12) -> (qout@R12,rem@R13)
 
                 .global uhimul24
                 ; (u@R12_L) -> (y@R12)

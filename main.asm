@@ -2,7 +2,7 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
-                .include "main.inc"
+                .include "macros.inc"
                 .include "user_input.inc"
                 .include "gnss.inc"
                 .include "systick.inc"
