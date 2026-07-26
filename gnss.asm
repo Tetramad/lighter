@@ -5,6 +5,7 @@
                 .include "systick.inc"
                 .include "datatable.inc"
                 .include "math.inc"
+                .include "indicator.inc"
 
 PARSER_STRUCT:  .struct
 run_length:     .uchar
@@ -265,13 +266,26 @@ wait_rx?:
                 mov.b   &UCA0RXBUF_L,&buffer+0
 
                 ; NOTE: NMEA183 legacy sentence length was 82 include newlines
-                cmp.b   #82,&index
+                cmp.b   #(82+1),&index
                 jc      skip_increase_index?
                 inc.b   &index
 skip_increase_index?:
 
                 xor.b   &buffer,&checksum
 
+                ; NOTE: data using here
+                ; data
+                ;   buffer[3]
+                ;   flags
+                ;     IN_RMC
+                ;     DATA_VALID
+                ;     CHECKSUM_PASSED
+                ;     PARSING_VALID
+                ;   checksum
+                ;   index
+                ;   synchronized
+
+                ; NOTE: control logic using here
                 ; if (*buffer == '$')
                 ;   then reset all
                 ; if (buffer == reverse("RMC"))
@@ -290,17 +304,6 @@ skip_increase_index?:
                 ;   then buffer[0:2] has checksum characters
                 ; if (buffer[0:2] == reverse("\r\n"))
                 ;   then tranmitting a sentence completed
-
-                ; data
-                ;   buffer[3]
-                ;   flags
-                ;     IN_RMC
-                ;     DATA_VALID
-                ;     CHECKSUM_PASSED
-                ;     PARSING_VALID
-                ;   checksum
-                ;   index
-                ;   synchronized
 
                 cmp.b   #'$',&buffer
                 jz      reset_data?
@@ -329,11 +332,10 @@ rmc_not_matched?:
 maybe_not_in_rmc?:
                 cmp.b   #'*',&buffer+2
                 jz      check_checksum?
-                cmp.b   #'\r',&buffer+1
+                cmp.b   #0Dh,&buffer+1
                 jnz     not_interested?
-                cmp.b   #'\n',&buffer+0
+                cmp.b   #0Ah,&buffer+0
                 jz      sentence_complete?
-
 not_interested?:
                 ret
 
@@ -406,9 +408,9 @@ parse_milliseconds?:
                 ret
 
 parse_data_validity?:
-                cmp.w   #'A',&buffer
+                cmp.b   #'A',&buffer
                 jz      data_valid?
-                cmp.w   #'D',&buffer
+                cmp.b   #'D',&buffer
                 jz      data_valid?
                 bic.b   #DATA_VALID,&flags ; TODO: remove if not needed.
                 ret
@@ -418,12 +420,15 @@ data_valid?:
                 ret
 
 check_checksum?:
+                xor.b   &buffer+0,&checksum
+                xor.b   &buffer+1,&checksum
+                xor.b   &buffer+2,&checksum
                 mov.b   &buffer+0,R12
                 mov.b   &buffer+1,R13
                 call    #parse_hexdigit2 ; (chr0@R12,chr1@R13) -> (error@R12,n@R13)
                 tst.w   R12
                 jn      digit_parsing_failed?
-                cmp.w   R13,&checksum
+                cmp.b   R13,&checksum
                 jnz     checksum_invalid?
                 bis.b   #CHECKSUM_PASSED,&flags
 checksum_invalid?:
@@ -471,6 +476,7 @@ parse_digit3:
                 add.w   R12,0(SP)
                 pop.w   R12
                 call    #uimul10 ; -> (u@R12)
+                pop.w   R13
                 add.w   R12,R13
                 clr.w   R12
                 ret
@@ -522,150 +528,3 @@ on_error?:
                 clr.w   R13
                 ret
                 .endasmfunc
-
-                .end
-
-                .sect   ".text:_isr"
-                .def    EUSCI_A0_ISR
-EUSCI_A0_ISR:
-                mov.b   &parser.buffer+1,&parser.buffer+0
-                mov.b   &parser.buffer+2,&parser.buffer+1
-                mov.b   &UCA0RXBUF_L,&parser.buffer+2
-                inc.b   &parser.run_length
-                xor.b   &parser.buffer+2,&parser.checksum
-
-                ; match (run_length, buffer, flags)
-
-                cmp.b   #80,&parser.run_length
-                jnc     $1
-                ; (>=80, _, _)
-                clr.b   &parser.run_length
-                bis.w   #010b,&parser.flags
-                ; (0, _, FINVAL)
-                jmp     done?
-$1:
-                cmp.b   #5,&parser.run_length
-                jnz     $2
-                cmp.b   #'R',&parser.buffer+0
-                jnz     $2
-                cmp.b   #'M',&parser.buffer+1
-                jnz     $2
-                cmp.b   #'C',&parser.buffer+2
-                jnz     $2
-                ; (5, "RMC", _)
-                bis.w   #001b,&parser.flags
-                ; (_, _, FRMC)
-$2:
-                cmp.b   #8,&parser.run_length
-                jnz     $3
-                bit.w   #001b,&parser.flags
-                jz      $3
-                ; (8, _, FRMC && !FINVAL)
-                mov.b   &parser.buffer+1,&parser.hh+0
-                mov.b   &parser.buffer+2,&parser.hh+1
-                ; "_XX" -> hh
-$3:
-                cmp.b   #10,&parser.run_length
-                jnz     $4
-                bit.w   #001b,&parser.flags
-                jz      $4
-                ; (10, _, FRMC && !FINVAL)
-                mov.b   &parser.buffer+1,&parser.mm+0
-                mov.b   &parser.buffer+2,&parser.mm+1
-                ; "_XX" -> mm
-$4:
-                cmp.b   #12,&parser.run_length
-                jnz     $5
-                bit.w   #001b,&parser.flags
-                jz      $5
-                ; (12, _, FRMC && !FINVAL)
-                mov.b   &parser.buffer+1,&parser.ss+0
-                mov.b   &parser.buffer+2,&parser.ss+1
-                ; "_XX" -> ss
-$5:
-                cmp.b   #16,&parser.run_length
-                jnz     $6
-                bit.w   #001b,&parser.flags
-                jz      $6
-                cmp.b   #'0',&parser.buffer+0
-                jnz     $6
-                cmp.b   #'0',&parser.buffer+1
-                jnz     $6
-                cmp.b   #'0',&parser.buffer+2
-                jnz     $6
-                ; (16, "000", _)
-                bis.w   #100b,&parser.flags
-                ; (_, _, FFIXED)
-$6:
-                cmp.b   #'*',&parser.buffer+0
-                jnz     $7
-                ; (_, "*__", _)
-                xor.b   &parser.buffer+0,&parser.checksum
-                xor.b   &parser.buffer+1,&parser.checksum
-                xor.b   &parser.buffer+2,&parser.checksum
-                cmp.b   #'A',&parser.buffer+1
-                jlo     NONHEX1?
-                sub.b   #'A'-'9'+1,&parser.buffer+1
-NONHEX1?:       sub.b   #'0',&parser.buffer+1
-                cmp.b   #'A',&parser.buffer+2
-                jlo     NONHEX2?
-                sub.b   #'A'-'9'+1,&parser.buffer+2
-NONHEX2?:       sub.b   #'0',&parser.buffer+2
-                rla.b   &parser.buffer+1
-                rla.b   &parser.buffer+1
-                rla.b   &parser.buffer+1
-                rla.b   &parser.buffer+1
-                xor.b   &parser.buffer+1,&parser.checksum
-                xor.b   &parser.buffer+2,&parser.checksum
-                tst.b   &parser.checksum
-                jz      $7
-                bis.w   #010b,&parser.flags
-                ; (_, _, FINVAL)
-$7:
-                cmp.b   #0Dh,&parser.buffer+1
-                jnz     $8
-                cmp.b   #0Ah,&parser.buffer+2
-                jnz     $8
-                cmp.b   #101b,&parser.flags
-                jnz     $8
-                ; (_, "_\r\n", FRMC && !FINVAL && FFIXED)
-                mov.w   &parser.hh,&parser.time+0
-                mov.w   &parser.mm,&parser.time+2
-                mov.w   &parser.ss,&parser.time+4
-                sub.w   #03030h,&parser.time+0
-                sub.w   #03030h,&parser.time+2
-                sub.w   #03030h,&parser.time+4
-                rla.b   &parser.time+0
-                add.b   &parser.time+0,&parser.time+1
-                rla.b   &parser.time+0
-                rla.b   &parser.time+0
-                add.b   &parser.time+0,&parser.time+1
-                rla.b   &parser.time+2
-                add.b   &parser.time+2,&parser.time+3
-                rla.b   &parser.time+2
-                rla.b   &parser.time+2
-                add.b   &parser.time+2,&parser.time+3
-                rla.b   &parser.time+4
-                add.b   &parser.time+4,&parser.time+5
-                rla.b   &parser.time+4
-                rla.b   &parser.time+4
-                add.b   &parser.time+4,&parser.time+5
-                swpb    &parser.time+0
-                swpb    &parser.time+2
-                swpb    &parser.time+4
-                clr.b   &parser.time+1
-                clr.b   &parser.time+3
-                clr.b   &parser.time+5
-                inc.w   &parser.time+6
-$8:
-                cmp.b   #'$',&parser.buffer+2
-                jnz     done?
-                ; (_, "__$", _)
-                clr.b   &parser.run_length
-                clr.w   &parser.checksum
-                clr.w   &parser.flags
-done?:
-                reti
-
-                .sect   EUSCI_A0_VECTOR
-                .word   EUSCI_A0_ISR

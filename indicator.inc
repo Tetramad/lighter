@@ -12,6 +12,14 @@
                 .global IND_morse_digit
                 ; (digit@R12) -> ()
 
+indset:         .macro
+                bis.b   #BIT0,&P2DIR
+                .endm
+
+indclr:         .macro
+                bic.b   #BIT0,&P2DIR
+                .endm
+
 morse_KA:       .macro
                 push.w  R12
                 push.w  R13
