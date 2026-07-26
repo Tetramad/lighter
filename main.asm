@@ -61,7 +61,7 @@ main:
 main_loop?:
 walltime_sync?:
                 call    #GNSS_begin
-                call    #GNSS_timesync_v2
+                call    #GNSS_timesync
                 call    #GNSS_end
 
 wait_next_lighting?:
@@ -82,16 +82,7 @@ wait_next_lighting?:
                 call    #ss_to_shhmmq ; (ss@[R13:R12]) -> (error@R12,shhmmq@R13)
                 mov.w   R13,R4 ; delta_shhmmq@R4
 
-                call    #GNSS_second
-                mov.w   R13,R10 ; gnss_seconds@R10
-                call    #GNSS_minute
-                mov.w   R13,R9 ; gnss_minutes@R9
-                call    #GNSS_hour
-                mov.w   R13,R8 ; gnss_hours@R8
-                mov.w   R8,R12
-                mov.w   R9,R13
-                mov.w   R10,R14
-                call    #hhmmss_to_shhmmq ; -> (error@R12,shhmmq@R13)
+                call    #GNSS_reftime ; -> (error@R12,shhmmq@R13)
                 tsterr  R12,on_error
                 mov.w   R13,R5 ; gnss_shhmmq@R5
 

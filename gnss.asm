@@ -129,33 +129,6 @@ GNSS_reset:
 GNSS_timesync:
 ; () -> (error@R12)
                 .asmfunc
-                clr.w   &parser.time+6
-$2:             cmp.w   #9,&parser.time+6
-                jlo     $2
-                call    #SYSTICK_get
-                push.w  R12
-                mov.w   #DT_GNSS_TICK_H,R12
-                call    #DT_store
-                pop.w   R13
-                mov.w   #DT_GNSS_TICK_L,R12
-                call    #DT_store
-                mov.w   #DT_GNSS_HH,R12
-                mov.w   &parser.time+0,R13
-                call    #DT_store
-                mov.w   #DT_GNSS_MM,R12
-                mov.w   &parser.time+2,R13
-                call    #DT_store
-                mov.w   #DT_GNSS_SS,R12
-                mov.w   &parser.time+4,R13
-                call    #DT_store
-                ret
-                .endasmfunc
-
-                .text
-                .def    GNSS_timesync_v2
-GNSS_timesync_v2:
-; () -> (error@R12)
-                .asmfunc
                 clr.b   &index
                 clr.b   &buffer+2
                 clr.b   &buffer+1
@@ -169,6 +142,18 @@ rx_loop?:
                 call    #GNSS_rx_processing
                 tst.w   &synchronized
                 jz      rx_loop?
+
+                ; TODO: error handling
+                call    #SYSTICK_get ; -> (systick_l@R12, systick_h@R13)
+                push.w  R12
+                mov.w   #DT_GNSS_TICK_H,R12
+                call    #DT_store
+                mov.w   #DT_GNSS_TICK_L,R12
+                pop.w   R13
+                call    #DT_store
+                mov.w   #DT_GNSS_SHHMMQ,R12
+                mov.w   &time,R12
+                call    #DT_store
 
                 clr.w   R12
                 ret
@@ -196,31 +181,12 @@ error?:
                 .endasmfunc
 
                 .text
-                .def    GNSS_hour
-GNSS_hour:
-; () -> (error@R12,hour@R13)
+                .def    GNSS_reftime
+GNSS_reftime:
+; () -> (error@R12,shhmmq@R13)
                 .asmfunc
-                mov.w   #DT_GNSS_HH,R12
-                call    #DT_load
-                ret
-                .endasmfunc
-
-                .text
-                .def    GNSS_minute
-GNSS_minute:
-; () -> (error@R12,minute@R13)
-                .asmfunc
-                mov.w   #DT_GNSS_MM,R12
-                call    #DT_load
-                ret
-                .endasmfunc
-
-                .text
-                .def    GNSS_second
-GNSS_second:
-; () -> (error@R12,second@R13)
-                .asmfunc
-                mov.w   #DT_GNSS_SS,R12
+                ; TODO: error handling
+                mov.w   #DT_GNSS_SHHMMQ,R12
                 call    #DT_load
                 ret
                 .endasmfunc

@@ -14,8 +14,9 @@
 
                 .asg    3,DT_GNSS_TICK_L
                 .asg    4,DT_GNSS_TICK_H
-                .asg    5,DT_GNSS_HH
+                .asg    5,DT_GNSS_SHHMMQ
                 .asg    6,DT_GNSS_MM
-                .asg    7,DT_GNSS_SS
+                .asg    7,DT_GNSS_HH
+                .asg    8,DT_GNSS_SS
 
-                .asg    8,DT_RECORD_LENGTH
+                .asg    9,DT_RECORD_LENGTH

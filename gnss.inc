@@ -17,14 +17,8 @@
 
                 .global GNSS_timesync
                 ; () -> (error@R12)
-                .global GNSS_timesync_v2
-                ; () -> (error@R12)
 
                 .global GNSS_reftick
                 ; () -> (error@R12,tick_l@R13,tick_h@R14)
-                .global GNSS_hour
-                ; () -> (error@R12,hour@R13)
-                .global GNSS_minute
-                ; () -> (error@R12,minute@R13)
-                .global GNSS_second
-                ; () -> (error@R12,second@R13)
+                .global GNSS_reftime
+                ; () -> (error@R12,shhmmq@R13)
