@@ -1,6 +1,10 @@
 ; vim: filetype=msp
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
+                ; uli:  double word
+                ; ui:   word (single register)
+                ; uhi:  half word (_l: lower half, _u: upper half)
+
                 .global ulimul60
                 ; (ul@[R13:R12]) -> (ul@[R13:R12])
                 .global ulidiv1000
@@ -14,8 +18,10 @@
                 ; (u@R12) -> (u@R12)
                 .global uimul16
                 ; (u@R12) -> (u@R12)
-                .global uidivmod10
-                ; (u@R12) -> (qout@R12,rem@R13)
+                .global uimul60
+                ; (u@R12) -> (u@R12)
+                .global uidivmodui
+                ; (dividend@R12,divider@R13) -> (quot@R12,rem@R13)
 
                 .global uhimul24
                 ; (u@R12_L) -> (y@R12)
@@ -27,7 +33,15 @@
                 ; (ss@[R13:R12]) -> (error@R12,shhmmq@R13)
                 .global hhmmss_to_shhmmq
                 ; (hh@R12,mm@R13,ss@R14) -> (error@R12,shhmmq@R13)
+
+                .global shhmmq_to_quaters
+                ; (shhmmq@R12) -> (error@R12,quaters@R13)
+                .global quaters_to_shhmmq
+                ; (quaters@R12) -> (error@R12,shhmmq@R13)
+
                 .global shhmmq_add
+                ; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
+                .global shhmmq_sub
                 ; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
 
 ulisub:         .macro  rhs_l,rhs_h,lhs_l,lhs_h
@@ -46,3 +60,7 @@ ulisub:         .macro  rhs_l,rhs_h,lhs_l,lhs_h
                 ; s00h hhhh mmmm mmqq b
                 ;
                 ; [-12:00:0, +24:00:0] 36 hours range -- TODO: but why?
+
+                ; quaters
+                ; 0000 0000 0000 0000 b
+                ;                     -> quater minutes (signed)

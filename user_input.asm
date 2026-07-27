@@ -84,8 +84,10 @@ lower_clamped?:
                 jnc     upper_clampled?
                 mov.w   #979,R13
 upper_clampled?:
+                clr.w   0(SP)
                 mov.w   R13,R12
-                call    #uidivmod10 ; -> (qout@R12,rem@R13)
+                mov.w   #10,R13
+                call    #uidivmodui ; -> (quot@R12,rem@R13)
                 rrc.w   R12
                 bic.w   #8000h,R12
                 clr.w   R13
@@ -118,22 +120,24 @@ not_negative_hours?:
                 jnc     upper_clampled?
                 mov.w   #999,R13
 upper_clampled?:
+                clr.w   0(SP)
                 mov.w   R13,R12
-                call    #uidivmod10 ; -> (qout@R12,rem@R13)
-                rrc.w   R12
-                rrc.w   R12
-                bic.w   #0C000h,R12
+                mov.w   #40,R13
+                call    #uidivmodui ; -> (quot@R12,rem@R13)
                 bit.w   #1b,R12
                 jz      zero_minutes?
                 mov.w   #01111000b,0(SP)
 zero_minutes?:
-                rrc.w   R12
-                bic.w   #8000h,R12
+                rra.w   R12
                 swpb    R12
                 add.w   R12,0(SP)
 
+                mov.w   #DT_UIN_TZ,R12
+                call    #DT_load ; -> (error@R12,timezone@R13)
+                mov.w   0(SP),R12
+                call    #shhmmq_add ; -> (error@R12,result@R13)
+
                 mov.w   #DT_UIN_SR,R12
-                mov.w   0(SP),R13
                 call    #DT_store
 
                 .newblock
@@ -143,27 +147,28 @@ zero_minutes?:
                 jnc     upper_clampled?
                 mov.w   #999,R13
 upper_clampled?:
+                clr.w   0(SP)
                 mov.w   R13,R12
-                call    #uidivmod10 ; -> (qout@R12,rem@R13)
-                rrc.w   R12
-                rrc.w   R12
-                bic.w   #0C000h,R12
-                bit.w   #1b,R12
-                jz      zero_minutes?
+                mov.w   #40,R13
+                call    #uidivmodui ; -> (quot@R12,rem@R13)
+                rra.w   R12
+                jnc     zero_minutes?
                 mov.w   #01111000b,0(SP)
 zero_minutes?:
-                rrc.w   R12
-                bic.w   #8000h,R12
                 add.w   #12,R12
                 swpb    R12
                 add.w   R12,0(SP)
 
+                mov.w   #DT_UIN_TZ,R12
+                call    #DT_load ; -> (error@R12,timezone@R13)
+                mov.w   0(SP),R12
+                call    #shhmmq_add ; -> (error@R12,result@R13)
+
                 mov.w   #DT_UIN_SS,R12
-                mov.w   0(SP),R13
                 call    #DT_store
 
-                pop.w   R3
                 clr.w   R12
+                pop.w   R3
                 ret
                 .endasmfunc
 

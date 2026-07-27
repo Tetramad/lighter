@@ -33,7 +33,7 @@ ulimul60:
                 .text
                 .def    ulidiv1000
 ulidiv1000:
-; (u_l@R12,u_h@R13) -> (qout_l@R12,qout_h@R13)
+; (u_l@R12,u_h@R13) -> (quot_l@R12,quot_h@R13)
                 .asmfunc
                 push.w  R4
                 push.w  R5
@@ -83,7 +83,7 @@ processed?:
                 .text
                 .def    ulidivmod60
 ulidivmod60:
-; (u_l@R12,u_h@R13) -> (qout_l@R12,qout_h@R13,rem@R14)
+; (u_l@R12,u_h@R13) -> (quot_l@R12,quot_h@R13,rem@R14)
                 .asmfunc
                 push.w  R4
                 push.w  R5
@@ -134,7 +134,7 @@ processed?:
                 .text
                 .def    ulidivmod24
 ulidivmod24:
-; (u_l@R12,u_h@R13) -> (qout_l@R12,qout_h@R13,rem@R14)
+; (u_l@R12,u_h@R13) -> (quot_l@R12,quot_h@R13,rem@R14)
                 .asmfunc
                 push.w  R4
                 push.w  R5
@@ -227,15 +227,39 @@ uimul16:
                 .endasmfunc
 
                 .text
-                .def    uidivmod10
-uidivmod10:
-; (u@R12) -> (qout@R12,rem@R13)
+                .def    uimul60
+uimul60:
+; (u@R12) -> (u@R12)
+                .asmfunc
+                push.w  #0
+                rla.w   R12
+                .loop 4
+                rla.w   R12
+                add.w   R12,0(SP)
+                .endloop
+                pop.w   R12
+                ret
+                .endasmfunc
+
+                .text
+                .def    uidivmodui
+uidivmodui:
+; (dividend@R12,divider@R13) -> (quot@R12,rem@R13)
                 .asmfunc
                 push.w  R4
                 push.w  R5
 
-                mov.w   #0A000h,R4
-                mov.w   #01000h,R5
+                mov.w   R13,R4
+                mov.w   #00001h,R5
+
+precalculation_loop?:
+                bit.w   #08000h,R4
+                jnz     precalculation_done?
+                rla.w   R4
+                rla.w   R5
+                jmp     precalculation_loop?
+precalculation_done?:
+
                 mov.w   R12,R13
                 clr.w   R12
 
@@ -413,34 +437,96 @@ hhmmss_to_shhmmq:
                 .endasmfunc
 
                 .text
+                .def    shhmmq_to_quaters
+shhmmq_to_quaters:
+; (shhmmq@R12) -> (error@R12,quaters@R13)
+                .asmfunc
+                mov.b   R12,R13
+                push.w  R13
+                swpb    R12
+                mov.b   R12,R12
+                bit.w   #00080h,R12
+                jz      non_negative?
+                bic.w   #00080h,R12
+                inv.w   R12
+                inc.w   R12
+                inv.w   0(SP)
+                inc.w   0(SP)
+non_negative?:
+                call    #uimul60 ; -> (u@R12)
+                rla.w   R12
+                rla.w   R12
+                add.w   R12,0(SP)
+
+                clr.w   R12
+                pop.w   R13
+                ret
+                .endasmfunc
+
+                .text
+                .def    quaters_to_shhmmq
+quaters_to_shhmmq:
+; (quaters@R12) -> (error@R12,shhmmq@R13)
+                .asmfunc
+                push.w  R12
+                tst.w   R12
+                jge     pre_non_negative?
+                inv.w   R12
+                inc.w   R12
+pre_non_negative?:
+                mov.w   #(60<<2),R13
+                call    #uidivmodui ; -> (quot@R12,rem@R13)
+
+                push.w  R13
+                mov.w   #24,R13
+                call    #uidivmodui ; -> (quot@R12,rem@R13)
+                pop.w   R12
+                swpb    R13
+                add.w   R12,R13
+                tst.w   0(SP)
+                jge     post_non_negative?
+                bis.w   #08000h,R13
+post_non_negative?:
+                clr.w   R12
+                pop.w   R3
+                ret
+                .endasmfunc
+
+                .text
                 .def    shhmmq_add
 shhmmq_add:
 ; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
                 .asmfunc
-                ; assume(rhs.s == 0 && lhs.s == 0)
-                mov.w   R12,R14
-                mov.w   R13,R15
+                push.w  R13
+                call    #shhmmq_to_quaters ; -> (error@R12,quaters@R13)
+                pop.w   R12
+                push.w  R13
+                call    #shhmmq_to_quaters ; -> (error@R12,quaters@R13)
+                pop.w   R12
+                ; rhs@R12,lhs@R13
 
-                mov.b   R12,R12
-                mov.b   R13,R13
-                add.w   R12,R13
-                cmp.w   #(60<<2),R13
-                jc      not_overflow_minutes?
-                sub.w   #(60<<2),R13
-                add.w   #0100h,R14
-not_overflow_minutes?:
-                swpb    R14
-                mov.b   R14,R14
-                swpb    R15
-                mov.b   R15,R15
+                add.w   R13,R12
 
-                add.b   R14,R15
-                swpb    R15
-                cmp.w   #24,R15
-                jc      not_overflow_hours?
-                sub.w   #24,R15
-not_overflow_hours?:
-                add.w   R15,R13
-                mov.w   #0,R12
+                call    #quaters_to_shhmmq ; -> (error@R12,shhmmq@R13)
+                ret
+                .endasmfunc
+
+                .text
+                .def    shhmmq_sub
+shhmmq_sub:
+; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
+                .asmfunc
+                push.w  R13
+                call    #shhmmq_to_quaters ; -> (error@R12,quaters@R13)
+                pop.w   R12
+                push.w  R13
+                call    #shhmmq_to_quaters ; -> (error@R12,quaters@R13)
+                pop.w   R12
+                ; rhs@R12,lhs@R13
+
+                sub.w   R12,R13
+                mov.w   R13,R12
+
+                call    #quaters_to_shhmmq ; -> (error@R12,shhmmq@R13)
                 ret
                 .endasmfunc

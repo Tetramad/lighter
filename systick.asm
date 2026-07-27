@@ -59,52 +59,27 @@ $1:             mov.w   &systick+0,R5
                 .def    SYSTICK_elapse
 SYSTICK_elapse:
 ; (current@R12,target@R13) -> ()
-; assume(current >= 0, target >= 0)
+; assume(current >= 0 && target >= 0 && target >= current)
                 .asmfunc
-                push.w  R4
-                push.w  R5
-                push.w  R6
-
-                mov.b   R12,R4
-                mov.b   R13,R5
-                sub.b   R4,R5
-                jc      minute_not_borrow?
-                add.b   #11110000b,R5 ; add 60.0 to R5
-                add.w   #0000000100000000b,R12
-minute_not_borrow?:
-                mov.w   R5,R6
-                swpb    R12
-                mov.b   R12,R4
+                call    #shhmmq_sub ; -> (error@R12,result@R13)
+                push.w  #0
+                mov.b   R13,0(SP)
                 swpb    R13
-                mov.b   R13,R5
-
-                sub.b   R4,R5
-                jc      hour_not_borrow?
-                add.b   #00011000b,R15 ; add 24 to R5
-hour_not_borrow?:
-                ; @R5: 000h hhhh
-                ; @R6: mmmm mmqq
-                mov.w   R5,R12
-                call    #uhimul24
+                mov.b   R13,R12
+                call    #uimul60 ; -> (y@R12)
                 rla.w   R12
                 rla.w   R12
-                add.w   R6,R12
-                mov.w   R12,R4
-                ; @R4: 0000 mmmm mmmm mmqq b
+                add.w   R12,0(SP)
 
-delay_repeat?:
-                tst.w   R4
-                jz      delay_done?
-
+loop?:
+                tst.w   0(SP)
+                jz      done?
                 delay   #15000
+                dec.w   0(SP)
+                jmp     loop?
+done?:
 
-                dec.w   R4
-                jmp     delay_repeat?
-delay_done?:
-
-                pop.w   R6
-                pop.w   R5
-                pop.w   R4
+                pop.w   R3
                 ret
                 .endasmfunc
 
