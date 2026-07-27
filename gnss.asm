@@ -152,7 +152,7 @@ rx_loop?:
                 pop.w   R13
                 call    #DT_store
                 mov.w   #DT_GNSS_SHHMMQ,R12
-                mov.w   &time,R12
+                mov.w   &time,R13
                 call    #DT_store
 
                 clr.w   R12
