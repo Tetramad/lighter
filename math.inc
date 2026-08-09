@@ -43,6 +43,8 @@
                 ; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
                 .global shhmmq_sub
                 ; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
+                .global shhmmq_abs
+                ; (shhmmq@R12) -> (error@R12,0hhmmq@R13)
 
 ulisub:         .macro  rhs_l,rhs_h,lhs_l,lhs_h
                 ; (rhs_l@Ra,rhs_h@Rb,lhs_l@Rc,lhs_h@Rd) -> (ul_l@Rc,ul_h@Rd)

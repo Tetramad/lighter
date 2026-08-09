@@ -136,6 +136,8 @@ zero_minutes?:
                 call    #DT_load ; -> (error@R12,timezone@R13)
                 mov.w   0(SP),R12
                 call    #shhmmq_sub ; -> (error@R12,result@R13)
+                mov.w   R13,R12
+                call    #shhmmq_abs ; -> (error@R12,result@R13)
 
                 mov.w   #DT_UIN_SR,R12
                 call    #DT_store
@@ -163,6 +165,8 @@ zero_minutes?:
                 call    #DT_load ; -> (error@R12,timezone@R13)
                 mov.w   0(SP),R12
                 call    #shhmmq_sub ; -> (error@R12,result@R13)
+                mov.w   R13,R12
+                call    #shhmmq_abs ; -> (error@R12,result@R13)
 
                 mov.w   #DT_UIN_SS,R12
                 call    #DT_store

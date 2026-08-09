@@ -530,3 +530,21 @@ shhmmq_sub:
                 call    #quaters_to_shhmmq ; -> (error@R12,shhmmq@R13)
                 ret
                 .endasmfunc
+
+                .text
+                .def    shhmmq_abs
+shhmmq_abs:
+; (shhmmq@R12) -> (error@R12,0hhmmq@R13)
+                .asmfunc
+                call    #shhmmq_to_quaters ; -> (error@R12,quaters@R13)
+                tst.w   R13
+                jn      repeat?
+                jmp     done?
+repeat?:
+                add.w   #(24*60*4),R13
+                jn      repeat?
+done?:
+                mov.w   R13,R12
+                call    #quaters_to_shhmmq ; -> (error@R12,shhmmq@R13)
+                ret
+                .endasmfunc
