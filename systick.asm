@@ -59,27 +59,17 @@ $1:             mov.w   &systick+0,R5
                 .text
                 .def    SYSTICK_elapse
 SYSTICK_elapse:
-; (current@R12,target@R13) -> ()
-; assume(current >= 0 && target >= 0 && target >= current)
+; (delay_quaters@R12) -> ()
                 .asmfunc
-                call    #shhmmq_sub ; -> (error@R12,result@R13)
-                push.w  #0
-                mov.b   R13,0(SP)
-                swpb    R13
-                mov.b   R13,R12
-                call    #uimul60 ; -> (y@R12)
-                rla.w   R12
-                rla.w   R12
-                add.w   R12,0(SP)
-
-loop?:
+                push.w  R12
                 tst.w   0(SP)
                 jz      done?
+loop?:
                 delay   #15000
                 dec.w   0(SP)
-                jmp     loop?
+                tst.w   0(SP)
+                jnz     loop?
 done?:
-
                 pop.w   R3
                 ret
                 .endasmfunc

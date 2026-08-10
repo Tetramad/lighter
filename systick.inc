@@ -11,8 +11,7 @@
                 ; (delay_ms@R12) -> ()
 
                 .global SYSTICK_elapse
-                ; (current@R12,target@R13) -> ()
-                ; current and target are shh:mm.q format
+                ; (delay_quaters@R12) -> ()
 
 delay:          .macro  millis
                 mov.w   :millis:,R12

@@ -44,7 +44,7 @@ UIN_end:
 UIN_read_and_decode:
 ; () -> (error@R12)
                 .asmfunc
-                push.w  #0
+                push.w  R4
 
                 bic.w   #ADCINCH,&ADCMCTL0
                 bis.w   #ADCINCH_0,&ADCMCTL0
@@ -74,112 +74,116 @@ UIN_read_and_decode:
                 call    #DT_store
 
                 .newblock
+                ; -12:00:00 ~ 12:00:00
+                ; map(0, 1023, -24, 24) 49 * 20 -> 980
+                ; clamp(0, 1023, 20, 999)
+                ; map(20, 999, -24, 24)
+                ; 30minutes * [-24,24]
+                ; 120quaters * [-24,24]
+                ; 01111000b * [-24,24]
                 mov.w   #DT_UIN_TZ_RAW,R12
                 call    #DT_load ; -> (error@R12,timezone_raw@R13)
-                cmp.w   #20,R13
-                jc      lower_clamped?
-                mov.w   #20,R13
-lower_clamped?:
-                cmp.w   #980,R13
-                jnc     upper_clampled?
-                mov.w   #979,R13
-upper_clampled?:
-                clr.w   0(SP)
                 mov.w   R13,R12
-                mov.w   #10,R13
+                cmp.w   #20,R12
+                jc      lower_clamped?
+                mov.w   #20,R12
+lower_clamped?:
+                cmp.w   #1000,R12
+                jnc     upper_clampled?
+                mov.w   #999,R12
+upper_clampled?:
+                sub.w   #20,R12
+                mov.w   #20,R13
                 call    #uidivmodui ; -> (quot@R12,rem@R13)
-                rrc.w   R12
-                bic.w   #8000h,R12
-                clr.w   R13
-                cmp.w   #24,R12
-                adc.w   R13
-                xor.w   R13,R12
-                bit.w   #1b,R12
-                jz      zero_minutes?
-                mov.w   #01111000b,0(SP)
-zero_minutes?:
-                rrc.w   R12
-                bic.w   #8000h,R12
-                sub.w   #12,R12
-                jge     not_negative_hours?
-                bis.w   #08000h,0(SP)
-                inv.w   R12
-                inc.w   R12
-not_negative_hours?:
-                swpb    R12
-                add.w   R12,0(SP)
-
+                sub.w   #24,R12
+                ;call   #uimul120
+                call    #uimul60 ; -> (u@R12)
+                rla.w   R12
+                mov.w   R12,R13
                 mov.w   #DT_UIN_TZ,R12
-                mov.w   0(SP),R13
                 call    #DT_store
 
+                ; TODO: white night?
                 .newblock
+                ; 00:00:00 ~ 11:30:00
+                ; map(0, 1023, 0, 23) 24 * 40 -> 960
+                ; clamp(0, 1023, 30, 989)
+                ; map(30, 989, 0, 23)
+                ; 30minutes * [0,23]
+                ; 120quaters * [0,23]
+                ; 01111000b * [0,23]
                 mov.w   #DT_UIN_SR_RAW,R12
                 call    #DT_load ; -> (error@R12,sunrise_raw@R13)
-                cmp.w   #1000,R13
-                jnc     upper_clampled?
-                mov.w   #999,R13
-upper_clampled?:
-                clr.w   0(SP)
                 mov.w   R13,R12
+                cmp.w   #30,R12
+                jc      lower_clamped?
+                mov.w   #30,R12
+lower_clamped?:
+                cmp.w   #990,R12
+                jnc     upper_clampled?
+                mov.w   #989,R12
+upper_clampled?:
+                sub.w   #30,R12
                 mov.w   #40,R13
                 call    #uidivmodui ; -> (quot@R12,rem@R13)
-                bit.w   #1b,R12
-                jz      zero_minutes?
-                mov.w   #01111000b,0(SP)
-zero_minutes?:
-                rra.w   R12
-                swpb    R12
-                add.w   R12,0(SP)
+                ;call   #uimul120
+                call    #uimul60 ; -> (u@R12)
+                rla.w   R12
+                mov.w   R12,R4
 
                 mov.w   #DT_UIN_TZ,R12
                 call    #DT_load ; -> (error@R12,timezone@R13)
-                mov.w   0(SP),R12
-                call    #shhmmq_sub ; -> (error@R12,result@R13)
-                mov.w   R13,R12
-                call    #shhmmq_abs ; -> (error@R12,result@R13)
-
+                mov.w   R4,R12
+                sub.w   R13,R12
+                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
                 mov.w   #DT_UIN_SR,R12
                 call    #DT_store
 
                 .newblock
+                ; 12:00:00 ~ 23:30:00
+                ; map(0, 1023, 24, 47) 24 * 40 -> 960
+                ; clamp(0, 1023, 30, 989)
+                ; map(30, 989, 24, 47)
+                ; 30minutes * [24, 47]
+                ; 120quaters * [24, 47]
+                ; 01111000b * [24, 47]
                 mov.w   #DT_UIN_SS_RAW,R12
                 call    #DT_load ; -> (error@R12,sunrise_raw@R13)
-                cmp.w   #1000,R13
-                jnc     upper_clampled?
-                mov.w   #999,R13
-upper_clampled?:
-                clr.w   0(SP)
                 mov.w   R13,R12
+                cmp.w   #30,R12
+                jc      lower_clamped?
+                mov.w   #30,R12
+lower_clamped?:
+                cmp.w   #990,R12
+                jnc     upper_clampled?
+                mov.w   #989,R12
+upper_clampled?:
+                sub.w   #30,R12
                 mov.w   #40,R13
                 call    #uidivmodui ; -> (quot@R12,rem@R13)
-                rra.w   R12
-                jnc     zero_minutes?
-                mov.w   #01111000b,0(SP)
-zero_minutes?:
-                add.w   #12,R12
-                swpb    R12
-                add.w   R12,0(SP)
+                add.w   #24,R12
+                ;call   #uimul120
+                call    #uimul60 ; -> (u@R12)
+                rla.w   R12
+                mov.w   R12,R4
 
                 mov.w   #DT_UIN_TZ,R12
                 call    #DT_load ; -> (error@R12,timezone@R13)
-                mov.w   0(SP),R12
-                call    #shhmmq_sub ; -> (error@R12,result@R13)
-                mov.w   R13,R12
-                call    #shhmmq_abs ; -> (error@R12,result@R13)
-
+                mov.w   R4,R12
+                sub.w   R13,R12
+                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R12)
                 mov.w   #DT_UIN_SS,R12
                 call    #DT_store
 
                 clr.w   R12
-                pop.w   R3
+                pop.w   R4
                 ret
                 .endasmfunc
 
                 .text
                 .def    UIN_timezone
 UIN_timezone:
-; () -> (error@R12, timezone_shhmmq@R13)
+; () -> (error@R12, timezone_quaters@R13)
                 .asmfunc
                 mov.w   #DT_UIN_TZ,R12
                 call    #DT_load
@@ -195,7 +199,7 @@ error?:
                 .text
                 .def    UIN_sunrise
 UIN_sunrise:
-; () -> (error@R12, sunrise_shhmmq@R13)
+; () -> (error@R12, sunrise_quaters@R13)
                 .asmfunc
                 mov.w   #DT_UIN_SR,R12
                 call    #DT_load
@@ -212,7 +216,7 @@ error?:
                 .text
                 .def    UIN_sunset
 UIN_sunset:
-; () -> (error@R12, sunset_shhmmq@R13)
+; () -> (error@R12, sunset_quaters@R13)
                 .asmfunc
                 mov.w   #DT_UIN_SS,R12
                 call    #DT_load

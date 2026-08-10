@@ -7,23 +7,16 @@
                 .include "math.inc"
                 .include "indicator.inc"
 
-PARSER_STRUCT:  .struct
-run_length:     .uchar
-buffer:         .space  3
-flags:          .word
-hh:             .space  2
-mm:             .space  2
-ss:             .space  2
-sss:            .space  3
-checksum:       .uchar
-time:           .word
-                .word
-                .word
-                .word
-PARSER_SIZE:    .endstruct
-
-parser:         .tag    PARSER_STRUCT
-                .bss    parser, PARSER_SIZE
+                .bss    index,1,1
+                .bss    buffer,3,1
+                .bss    flags,1,1
+                .asg    0001b,IN_RMC
+                .asg    0010b,DATA_VALID
+                .asg    0100b,CHECKSUM_PASSED
+                .asg    1000b,PARSING_VALID
+                .bss    checksum,1,1
+                .bss    time,2,2
+                .bss    synchronized,2,2
 
                 .sect   ".const"
 GNSS_INIT_CMD:  .string "$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*35",0Dh,0Ah,0
@@ -151,7 +144,7 @@ rx_loop?:
                 mov.w   #DT_GNSS_TICK_L,R12
                 pop.w   R13
                 call    #DT_store
-                mov.w   #DT_GNSS_SHHMMQ,R12
+                mov.w   #DT_GNSS_QUATERS,R12
                 mov.w   &time,R13
                 call    #DT_store
 
@@ -183,10 +176,9 @@ error?:
                 .text
                 .def    GNSS_reftime
 GNSS_reftime:
-; () -> (error@R12,shhmmq@R13)
+; () -> (error@R12,quaters@R13)
                 .asmfunc
-                ; TODO: error handling
-                mov.w   #DT_GNSS_SHHMMQ,R12
+                mov.w   #DT_GNSS_QUATERS,R12
                 call    #DT_load
                 ret
                 .endasmfunc
@@ -207,17 +199,6 @@ WAIT_CPT?:      bit.b   #UCTXCPTIFG_L,&UCA0IFG_L
                 jz      WAIT_CPT?
                 ret
                 .endasmfunc
-
-                .bss    index,1,1
-                .bss    buffer,3,1
-                .bss    flags,1,1
-                .asg    0001b,IN_RMC
-                .asg    0010b,DATA_VALID
-                .asg    0100b,CHECKSUM_PASSED
-                .asg    1000b,PARSING_VALID
-                .bss    checksum,1,1
-                .bss    time,2,2
-                .bss    synchronized,2,2
 
                 .text
 GNSS_rx_processing:
@@ -326,8 +307,11 @@ parse_hours?:
                 call    #parse_digit2 ; -> (chr0@R12,chr1@R13) -> (error@R12,n@R13)
                 tst.w   R12
                 jn      digit_parsing_failed?
-                swpb    R13
-                add.w   R13,&time
+                mov.w   R13,R12
+                call    #uimul60 ; -> (u@R12)
+                rla.w   R12
+                rla.w   R12
+                add.w   R12,&time
                 ret
 
 parse_minutes?:

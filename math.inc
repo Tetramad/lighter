@@ -5,13 +5,11 @@
                 ; ui:   word (single register)
                 ; uhi:  half word (_l: lower half, _u: upper half)
 
-                .global ulimul60
-                ; (ul@[R13:R12]) -> (ul@[R13:R12])
                 .global ulidiv1000
                 ; (u_l@R12,u_h@R13) -> (quot_l@R12,quot_h@R13)
-                .global ulidivmod60
+                .global ulidivmod15
                 ; (u_l@R12,u_h@R13) -> (quot_l@R12,quot_h@R13,rem@R14)
-                .global ulidivmod24
+                .global ulidivmod5760
                 ; (u_l@R12,u_h@R13) -> (quot_l@R12,quot_h@R13,rem@R14)
 
                 .global uimul10
@@ -23,46 +21,14 @@
                 .global uidivmodui
                 ; (dividend@R12,divider@R13) -> (quot@R12,rem@R13)
 
-                .global uhimul24
-                ; (u@R12_L) -> (y@R12)
+                .global quaters_unsigned
+                ; (quaters@R12) -> (error@R12,quaters_unsigned@R13)
 
-                .global utobcd
-                ; (u@R12) -> (bcd_l@R12,bcd_h@R13)
-
-                .global ss_to_shhmmq
-                ; (ss@[R13:R12]) -> (error@R12,shhmmq@R13)
-                .global hhmmss_to_shhmmq
-                ; (hh@R12,mm@R13,ss@R14) -> (error@R12,shhmmq@R13)
-
-                .global shhmmq_to_quaters
-                ; (shhmmq@R12) -> (error@R12,quaters@R13)
-                .global quaters_to_shhmmq
-                ; (quaters@R12) -> (error@R12,shhmmq@R13)
-
-                .global shhmmq_add
-                ; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
-                .global shhmmq_sub
-                ; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
-                .global shhmmq_abs
-                ; (shhmmq@R12) -> (error@R12,0hhmmq@R13)
-
-ulisub:         .macro  rhs_l,rhs_h,lhs_l,lhs_h
-                ; (rhs_l@Ra,rhs_h@Rb,lhs_l@Rc,lhs_h@Rd) -> (ul_l@Rc,ul_h@Rd)
-                sub.w   rhs_l,lhs_l
-                subc.w  rhs_h,lhs_h
-                .endm
-
-                ; shh:mm.q (shhmmq)
-                ; 0000 0000 0000 0000 b
-                ;                  00 -> quater minutes
-                ;           1111 00   -> minutes
-                ;    1 1000           -> hours
-                ; 1                   -> sign
-                ;  00                 -> reserved(0 by default)
-                ; s00h hhhh mmmm mmqq b
-                ;
-                ; [-12:00:0, +24:00:0] 36 hours range -- TODO: but why?
-
-                ; quaters
+                ; quater minutes or quaters
                 ; 0000 0000 0000 0000 b
                 ;                     -> quater minutes (signed)
+                ;
+                ; e.g. 0000000000000001b => 15 seconds
+                ;      0000000000000100b => 1 minute
+                ;      0000000011110000b => 1 hour(60 minutes)
+                ;      1111111100010000b => -1 hours

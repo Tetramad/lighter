@@ -18,7 +18,7 @@
 
                 .asg    6,DT_GNSS_TICK_L
                 .asg    7,DT_GNSS_TICK_H
-                .asg    8,DT_GNSS_SHHMMQ
+                .asg    8,DT_GNSS_QUATERS
                 .asg    9,DT_GNSS_MM
                 .asg    10,DT_GNSS_HH
                 .asg    11,DT_GNSS_SS

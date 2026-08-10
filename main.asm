@@ -65,9 +65,6 @@ walltime_sync?:
                 call    #GNSS_end
 
 wait_next_lighting?:
-                ; TODO:
-                ; assume(GNSS_reftick() <= SYSTICK_get())
-                ; which false after wrap-around
                 call    #GNSS_reftick ; -> (error@R12,tick_l@R13,tick_h@R14)
                 tsterr  R12,on_error
                 mov.w   R13,R4 ; tick_l@R4
@@ -75,25 +72,25 @@ wait_next_lighting?:
                 call    #SYSTICK_get ; -> (systick_l@R12,systick_h@R13)
                 mov.w   R12,R6 ; systick_l@R6
                 mov.w   R13,R7 ; systick_h@R7
-                ulisub  R4,R5,R6,R7 ; delta_ms@[R7:R6]
+                sub.w   R4,R6
+                subc.w  R5,R7 ; delta_ms@[R7:R6]
                 mov.w   R6,R12
                 mov.w   R7,R13
                 call    #ulidiv1000 ; seconds @[R13:R12]
-                call    #ss_to_shhmmq ; (ss@[R13:R12]) -> (error@R12,shhmmq@R13)
-                mov.w   R13,R4 ; delta_shhmmq@R4
+                call    #ulidivmod15 ; quaters@[R13:R12]
+                call    #ulidivmod5760 ; quaters@R14
+                mov.w   R14,R4 ; delta_quaters@R4
 
-                call    #GNSS_reftime ; -> (error@R12,shhmmq@R13)
+                call    #GNSS_reftime ; -> (error@R12,quaters@R13)
                 tsterr  R12,on_error
-                mov.w   R13,R5 ; gnss_shhmmq@R5
+                mov.w   R13,R5 ; gnss_quaters@R5
 
-                ; delta_shhmmq@R4
-                ; gnss_shhmmq@R5
-
-                mov.w   R4,R12
-                mov.w   R5,R13
-                call    #shhmmq_add ; (rhs@R12,lhs@R13) -> (error@R12,result@R13)
-                tsterr  R12,on_error
-                mov.w   R13,R4 ; result_shhmmq@R4
+                ; delta_quaters@R4
+                ; gnss_quaters@R5
+                mov.w   R5,R12
+                add.w   R4,R12
+                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
+                mov.w   R13,R4 ; current_quaters
 
                 call    #UIN_sunrise
                 mov.w   R13,R5
@@ -103,47 +100,28 @@ wait_next_lighting?:
                 ; @R5: sunrise
                 ; @R6: sunset
 
-                clr.w   R7
-                cmp.w   R5,R4
-                rlc.w   R7 ; C if R4 >= R5
-                cmp.w   R6,R5
-                rlc.w   R7 ; C if R5 >= R6
-                cmp.w   R6,R4
-                rlc.w   R7 ; C if R4 >= R6
-                ; R7 00000000 00000111
-                ;                  ||`- R4 >= R6
-                ;                  |`- R5 >= R6
-                ;                  `- R4 >= R5
-                ; full permutation       R7(2:0)
-                ;   sunset sunrise current (111)-> sunset
-                ;   sunrise current sunset (100)-> sunset
-                ;   current sunset sunrise (010)-> sunset
-                ;   sunrise sunset current (101)-> sunrise
-                ;   sunset current sunrise (011)-> sunrise
-                ;   current sunrise sunset (000)-> sunrise
+                mov.w   R4,R12
+                sub.w   R5,R12
+                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
+                mov.w   R13,R5
+                mov.w   R4,R12
+                sub.w   R6,R12
+                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
+                mov.w   R13,R6
+                ; @R4: current
+                ; @R5: abs(current - sunrise)
+                ; @R6: abs(current - sunset)
 
-                cmp.w   #111b,R7
-                jz      wait_sunset
-                cmp.w   #100b,R7
-                jz      wait_sunset
-                cmp.w   #010b,R7
-                jz      wait_sunset
-                cmp.w   #101b,R7
-                jz      wait_sunrise
-                cmp.w   #011b,R7
-                jz      wait_sunrise
-                cmp.w   #000b,R7
-                jz      wait_sunrise
-                jmp     on_error
+                cmp.w   R6,R5
+                jl      wait_sunrise
+                jmp     wait_sunset
 
 wait_sunset:
-                mov.w   R4,R12
-                mov.w   R6,R13
+                mov.w   R6,R12
                 call    #SYSTICK_elapse
                 jmp     sunset
 wait_sunrise:
-                mov.w   R4,R12
-                mov.w   R5,R13
+                mov.w   R5,R12
                 call    #SYSTICK_elapse
                 jmp     sunrise
 
