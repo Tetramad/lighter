@@ -12,7 +12,8 @@
 SYSTICK_init:
 ; () -> ()
                 .asmfunc
-                mov.w   #10,&RTCMOD
+                ; TODO: VLOCLK has 50% range in spec.? why?
+                mov.w   #(1000/125),&RTCMOD
                 mov.w   &RTCIV,R3
                 mov.w   #RTCSS__VLOCLK|RTCPS__1|RTCSR_1|RTCIE_0,&RTCCTL
 
