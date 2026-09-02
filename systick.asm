@@ -40,19 +40,13 @@ SYSTICK_get:
                 .def    SYSTICK_delay_ms
 SYSTICK_delay_ms:
 ; (delay_ms@R12) -> ()
-                .asg    R4,start
-                .asg    R5,stop
-                .asg    R5,diff
                 .asmfunc
-                push.w  R4
-                push.w  R5
-                mov.w   &systick+0,R4
-$1:             mov.w   &systick+0,R5
-                sub.w   R4,R5
-                cmp.w   R12,R5
+                mov.w   &systick+0,R13
+$1:
+                mov.w   &systick+0,R14
+                sub.w   R13,R14
+                cmp.w   R12,R14
                 jnc     $1
-                pop.w   R5
-                pop.w   R4
                 ret
                 .endasmfunc
 
