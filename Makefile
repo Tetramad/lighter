@@ -33,7 +33,8 @@ OBJS = \
 	   datatable.obj \
 	   gnss.obj \
 	   math.obj \
-	   indicator.obj
+	   indicator.obj \
+	   eusci_b.obj
 
 all: main.txt main.dis.txt
 

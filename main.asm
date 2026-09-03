@@ -9,6 +9,7 @@
                 .include "light_control.inc"
                 .include "math.inc"
                 .include "indicator.inc"
+                .include "eusci_b.inc"
 
                 .def    RESET
 
@@ -43,6 +44,7 @@ wait_fll_lock?: bit.w   #FLLUNLOCK,&CSCTL7
                 call    #GNSS_wakeup_init
                 call    #GNSS_reset_init
                 call    #LC_power_init
+                call    #eUSCI_B0_init
 
                 bic.w   #LOCKLPM5,&PM5CTL0
                 eint
