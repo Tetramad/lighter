@@ -9,6 +9,7 @@
                 .include "light_control.inc"
                 .include "math.inc"
                 .include "indicator.inc"
+                .include "datatable.inc"
                 .include "eusci_b.inc"
 
                 .def    RESET
@@ -74,6 +75,12 @@ wait_next_lighting?:
                 call    #SYSTICK_get ; -> (systick_l@R12,systick_h@R13)
                 mov.w   R12,R6 ; systick_l@R6
                 mov.w   R13,R7 ; systick_h@R7
+                mov.w   #DT_LOG_LATEST_TICK_L,R12
+                mov.w   R6,R13
+                call    #DT_store
+                mov.w   #DT_LOG_LATEST_TICK_H,R12
+                mov.w   R7,R13
+                call    #DT_store
                 sub.w   R4,R6
                 subc.w  R5,R7 ; delta_ms@[R7:R6]
                 mov.w   R6,R12
@@ -102,17 +109,27 @@ wait_next_lighting?:
                 ; @R5: sunrise
                 ; @R6: sunset
 
-                mov.w   R4,R12
-                sub.w   R5,R12
+                mov.w   R5,R12
+                sub.w   R4,R12
                 call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
                 mov.w   R13,R5
-                mov.w   R4,R12
-                sub.w   R6,R12
+                mov.w   R6,R12
+                sub.w   R4,R12
                 call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
                 mov.w   R13,R6
                 ; @R4: current
                 ; @R5: abs(current - sunrise)
                 ; @R6: abs(current - sunset)
+
+                mov.w   #DT_LOG_CURRENT,R12
+                mov.w   R4,R13
+                call    #DT_store
+                mov.w   #DT_LOG_TILL_SUNRISE,R12
+                mov.w   R5,R13
+                call    #DT_store
+                mov.w   #DT_LOG_TILL_SUNSET,R12
+                mov.w   R6,R13
+                call    #DT_store
 
                 cmp.w   R6,R5
                 jl      wait_sunrise
