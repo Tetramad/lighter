@@ -25,22 +25,27 @@ ulidiv1000:
                 clr.w   R13
 
 repeat?:
+                cmp.w   R7,R5
+                jeq     compare_lower_word?
+                jhs     subtractable?
+                jmp     not_subtractable?
+compare_lower_word?:
+                cmp.w   R6,R4
+                jhs     subtractable?
+                jmp     not_subtractable?
+subtractable?:
                 sub.w   R6,R4
                 subc.w  R7,R5
-                jl      not_subtractable?
                 add.w   R8,R12
                 addc.w  R9,R13
-                jmp     processed?
 not_subtractable?:
-                add.w   R6,R4
-                addc.w  R7,R5
 processed?:
                 clrc
-                rlc.w   R7
-                rlc.w   R6
+                rrc.w   R7
+                rrc.w   R6
                 clrc
-                rlc.w   R9
-                rlc.w   R8
+                rrc.w   R9
+                rrc.w   R8
                 cmp.w   R8,R9
                 jnz     repeat?
 
@@ -75,22 +80,27 @@ ulidivmod15:
                 clr.w   R13
 
 repeat?:
+                cmp.w   R7,R5
+                jeq     compare_lower_word?
+                jhs     subtractable?
+                jmp     not_subtractable?
+compare_lower_word?:
+                cmp.w   R6,R4
+                jhs     subtractable?
+                jmp     not_subtractable?
+subtractable?:
                 sub.w   R6,R4
                 subc.w  R7,R5
-                jl      not_subtractable?
                 add.w   R8,R12
                 addc.w  R9,R13
-                jmp     processed?
 not_subtractable?:
-                add.w   R6,R4
-                addc.w  R7,R5
 processed?:
                 clrc
-                rlc.w   R7
-                rlc.w   R6
+                rrc.w   R7
+                rrc.w   R6
                 clrc
-                rlc.w   R9
-                rlc.w   R8
+                rrc.w   R9
+                rrc.w   R8
                 cmp.w   R8,R9
                 jnz     repeat?
                 mov.w   R4,R14
@@ -126,22 +136,27 @@ ulidivmod5760:
                 clr.w   R13
 
 repeat?:
+                cmp.w   R7,R5
+                jeq     compare_lower_word?
+                jhs     subtractable?
+                jmp     not_subtractable?
+compare_lower_word?:
+                cmp.w   R6,R4
+                jhs     subtractable?
+                jmp     not_subtractable?
+subtractable?:
                 sub.w   R6,R4
                 subc.w  R7,R5
-                jl      not_subtractable?
                 add.w   R8,R12
                 addc.w  R9,R13
-                jmp     processed?
 not_subtractable?:
-                add.w   R6,R4
-                addc.w  R7,R5
 processed?:
                 clrc
-                rlc.w   R7
-                rlc.w   R6
+                rrc.w   R7
+                rrc.w   R6
                 clrc
-                rlc.w   R9
-                rlc.w   R8
+                rrc.w   R9
+                rrc.w   R8
                 cmp.w   R8,R9
                 jnz     repeat?
                 mov.w   R4,R14
