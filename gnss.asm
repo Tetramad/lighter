@@ -288,7 +288,7 @@ reset_data?:
                 clr.b   &buffer+2
                 clr.b   &buffer+1
                 clr.b   &buffer+0
-                mov.b   #PARSING_VALID,&flags
+                mov.b   #DATA_VALID|PARSING_VALID,&flags
                 clr.b   &checksum
                 clr.w   &time
                 clr.w   &synchronized
@@ -363,7 +363,6 @@ parse_data_validity?:
                 ret
 
 data_valid?:
-                bis.b   #DATA_VALID,&flags
                 ret
 
 check_checksum?:
