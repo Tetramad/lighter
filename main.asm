@@ -58,6 +58,7 @@ main:
                 call    #GNSS_begin
                 call    #GNSS_end
 
+read_user_configuration?:
                 call    #UIN_begin
                 call    #UIN_read_and_decode
                 tsterr  R12,on_error

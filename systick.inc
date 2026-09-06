@@ -14,6 +14,7 @@
                 ; (delay_quaters@R12) -> ()
 
 delay:          .macro  millis
+; (delay_ms@R12) -> ()
                 mov.w   :millis:,R12
                 call    #SYSTICK_delay_ms
                 .endm

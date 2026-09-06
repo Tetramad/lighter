@@ -42,14 +42,13 @@ GNSS_begin:
 
                 call    #GNSS_wakeup
 
+                ; TODO: better wakeup delay
                 delay   #1000
+
                 mov.w   #GNSS_INIT_CMD,R12
                 call    #GNSS_transmit
                 mov.w   #GNSS_DISTXT_CMD,R12
                 call    #GNSS_transmit
-
-                ; delay   #1000
-                ; bis.w   #UCRXIE,&UCA0IE
 
                 ret
                 .endasmfunc
@@ -64,8 +63,8 @@ GNSS_end:
 
                 bic.w   #UCRXIE,&UCA0IE
 
-                mov.w   #1000,R12
-                call    #SYSTICK_delay_ms
+                ; TODO: better backup sleep delay
+                delay   #1000
 
                 bic.b   #BIT6|BIT7,&P1SEL0
                 bis.b   #BIT6|BIT7,&P1REN
@@ -89,8 +88,7 @@ GNSS_wakeup:
 ; () -> ()
                 .asmfunc
                 bis.b   #BIT6,&P2OUT
-                mov.w   #1500,R12
-                call    #SYSTICK_delay_ms
+                delay   #1500
                 bic.b   #BIT6,&P2OUT
                 ret
                 .endasmfunc
@@ -111,8 +109,7 @@ GNSS_reset:
 ; () -> ()
                 .asmfunc
                 bis.b   #BIT7,&P2DIR
-                mov.w   #500,R12
-                call    #SYSTICK_delay_ms
+                delay   #500
                 bic.b   #BIT7,&P2DIR
                 ret
                 .endasmfunc
