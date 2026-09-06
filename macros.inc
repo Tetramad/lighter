@@ -6,7 +6,12 @@ tsterr:         .macro  reg,label
                 jn      label
                 .endm
 
-waitbit:        .macro  bits,address
+waitbis:        .macro  bits,address
 wait?:          bit.w   bits,address
                 jz      wait?
+                .endm
+
+waitbic:        .macro  bits,address
+wait?:          bit.w   bits,address
+                jnz     wait?
                 .endm

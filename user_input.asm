@@ -49,7 +49,7 @@ UIN_read_and_decode:
                 bic.w   #ADCINCH,&ADCMCTL0
                 bis.w   #ADCINCH_0,&ADCMCTL0
                 bis.w   #ADCENC|ADCSC,&ADCCTL0
-                waitbit #ADCIFG0,&ADCIFG
+                waitbis #ADCIFG0,&ADCIFG
                 mov.w   &ADCMEM0,R13
                 bic.w   #ADCENC,&ADCCTL0
                 mov.w   #DT_UIN_TZ_RAW,R12
@@ -58,7 +58,7 @@ UIN_read_and_decode:
                 bic.w   #ADCINCH,&ADCMCTL0
                 bis.w   #ADCINCH_4,&ADCMCTL0
                 bis.w   #ADCENC|ADCSC,&ADCCTL0
-                waitbit #ADCIFG0,&ADCIFG
+                waitbis #ADCIFG0,&ADCIFG
                 mov.w   &ADCMEM0,R13
                 bic.w   #ADCENC,&ADCCTL0
                 mov.w   #DT_UIN_SR_RAW,R12
@@ -67,7 +67,7 @@ UIN_read_and_decode:
                 bic.w   #ADCINCH,&ADCMCTL0
                 bis.w   #ADCINCH_5,&ADCMCTL0
                 bis.w   #ADCENC|ADCSC,&ADCCTL0
-                waitbit #ADCIFG0,&ADCIFG
+                waitbis #ADCIFG0,&ADCIFG
                 mov.w   &ADCMEM0,R13
                 bic.w   #ADCENC,&ADCCTL0
                 mov.w   #DT_UIN_SS_RAW,R12

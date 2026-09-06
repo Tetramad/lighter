@@ -22,6 +22,7 @@
                 .retainrefs
 RESET:
                 mov.w   #__STACK_END,SP
+
 ; Hold watchdog timer
                 mov.w   #WDTPW+WDTHOLD,&WDTCTL
 
@@ -29,9 +30,7 @@ RESET:
                 bis.w   #SCG0,SR
                 mov.w   #SELREF__REFOCLK,&CSCTL3
                 bic.w   #SCG0,SR
-
-wait_fll_lock?: bit.w   #FLLUNLOCK,&CSCTL7
-                jnz     wait_fll_lock?
+                waitbic #FLLUNLOCK,&CSCTL7
 
 ; Default unused pins
                 mov.w   #00000h,&PADIR
@@ -50,6 +49,9 @@ wait_fll_lock?: bit.w   #FLLUNLOCK,&CSCTL7
                 bic.w   #LOCKLPM5,&PM5CTL0
                 eint
 
+                br      #main
+
+                .text
 main:
                 call    #GNSS_reset
                 delay   #1000
@@ -68,77 +70,92 @@ walltime_sync?:
                 call    #GNSS_end
 
 wait_next_lighting?:
+                ; tick_delta = tick_sys - tick_gnss
+                ; quater_delta = tick_delta / TICK_PER_QUATER
+                ; -- TICK_PER_QUATER = 1000 * 15
+                ; quater_delta = quater_delta % QUATER_PER_DAY
+                .asg    R4,R4$gnsstick_l
+                .asg    R5,R5$gnsstick_h
+                .asg    R6,R6$systick_l
+                .asg    R7,R7$systick_h
+
                 call    #GNSS_reftick ; -> (error@R12,gnsstick_l@R13,gnsstick_h@R14)
                 tsterr  R12,on_error
-                mov.w   R13,R4
-                .asg    R4,R4$gnsstick_l
-                mov.w   R14,R5
-                .asg    R5,R5$gnsstick_h
+                mov.w   R13,R4$gnsstick_l
+                mov.w   R14,R5$gnsstick_h
                 call    #SYSTICK_get ; -> (systick_l@R12,systick_h@R13)
-                mov.w   R12,R6
-                .asg    R6,R6$systick_l
-                mov.w   R13,R7
-                .asg    R7,R7$systick_h
+                mov.w   R12,R6$systick_l
+                mov.w   R13,R7$systick_h
+
                 mov.w   #DT_LOG_LATEST_TICK_L,R12
                 mov.w   R6$systick_l,R13
                 call    #DT_store
                 mov.w   #DT_LOG_LATEST_TICK_H,R12
                 mov.w   R7$systick_h,R13
                 call    #DT_store
+
                 sub.w   R4$gnsstick_l,R6$systick_l
-                .unasg  R4$gnsstick_l
-                .unasg  R6$systick_l
-                .asg    R6,R6$delta_ms_l
                 subc.w  R5$gnsstick_h,R7$systick_h
+
+                .unasg  R4$gnsstick_l
                 .unasg  R5$gnsstick_h
+                .unasg  R6$systick_l
                 .unasg  R7$systick_h
+                .asg    R6,R6$delta_ms_l
                 .asg    R7,R7$delta_ms_h
+
+                .asg    R4,R4$delta_qm
+                .asg    R5,R5$gnss_qm
+
                 mov.w   R6$delta_ms_l,R12
-                .unasg  R6$delta_ms_l
                 mov.w   R7$delta_ms_h,R13
-                .unasg  R7$delta_ms_h
                 call    #ulidiv1000 ; seconds @[R13:R12]
                 call    #ulidivmod15 ; quaters@[R13:R12]
                 call    #ulidivmod5760 ; quaters@R14
-                mov.w   R14,R4
-                .asg    R4,R4$delta_qm
+                mov.w   R14,R4$delta_qm
+
+                .unasg  R6$delta_ms_l
+                .unasg  R7$delta_ms_h
 
                 call    #GNSS_reftime ; -> (error@R12,quaters@R13)
                 tsterr  R12,on_error
-                mov.w   R13,R5
-                .asg    R5,R5$gnss_qm
+                mov.w   R13,R5$gnss_qm
 
-                mov.w   R5$gnss_qm,R12
-                .unasg  R5$gnss_qm
-                add.w   R4$delta_qm,R12
-                .unasg  R4$delta_qm
-                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
-                mov.w   R13,R4
                 .asg    R4,R4$current_qm
 
-                call    #UIN_sunrise
-                mov.w   R13,R5
+                mov.w   R5$gnss_qm,R12
+                add.w   R4$delta_qm,R12
+                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
+                mov.w   R13,R4$current_qm
+
+                .unasg  R5$gnss_qm
+                .unasg  R4$delta_qm
+
                 .asg    R5,R5$sunrise_qm
-                call    #UIN_sunset
-                mov.w   R13,R6
                 .asg    R6,R6$sunset_qm
 
-                mov.w   R5$sunrise_qm,R12
-                .unasg  R5$sunrise_qm
-                sub.w   R4$current_qm,R12
-                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
-                mov.w   R13,R5
+                call    #UIN_sunrise
+                mov.w   R13,R5$sunrise_qm
+                call    #UIN_sunset
+                mov.w   R13,R6$sunset_qm
+
                 .asg    R5,R5$till_sunrise_qm
-                mov.w   R6$sunset_qm,R12
-                .unasg  R6$sunset_qm
+                .asg    R6,R6$till_sunset_qm
+
+                mov.w   R5$sunrise_qm,R12
                 sub.w   R4$current_qm,R12
                 call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
-                mov.w   R13,R6
-                .asg    R6,R6$till_sunset_qm
+                mov.w   R13,R5$till_sunrise_qm
+                mov.w   R6$sunset_qm,R12
+                sub.w   R4$current_qm,R12
+                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
+                mov.w   R13,R6$till_sunset_qm
+
+                .unasg  R5$sunrise_qm
+                .unasg  R6$sunset_qm
 
                 mov.w   #DT_LOG_CURRENT,R12
                 mov.w   R4$current_qm,R13
-                .unasg  R4$current_qm
                 call    #DT_store
                 mov.w   #DT_LOG_TILL_SUNRISE,R12
                 mov.w   R5$till_sunrise_qm,R13
@@ -153,14 +170,16 @@ wait_next_lighting?:
 
 wait_sunset:
                 mov.w   R6$till_sunset_qm,R12
-                .unasg  R6$till_sunset_qm
                 call    #SYSTICK_elapse
                 jmp     sunset
 wait_sunrise:
                 mov.w   R5$till_sunrise_qm,R12
-                .unasg  R5$till_sunrise_qm
                 call    #SYSTICK_elapse
                 jmp     sunrise
+
+                .unasg  R4$current_qm
+                .unasg  R5$till_sunrise_qm
+                .unasg  R6$till_sunset_qm
 
 sunrise:
                 mov.w   #0,R12
@@ -201,10 +220,3 @@ hang?:          jmp     hang?
                 .sect   RESET_VECTOR
                 .word   RESET
                 .end
-
-; PUC -> initialization -> user input check
-; -> [walltime sync] wall time synchronization
-; -> [wait next] wait next sunrise or sunset
-; -> if sunrise [sunrise] if sunset [sunset] --
-; [sunrise] light control to show sunrise -> [wait next]
-; [sunset]  light control to show sunset -> [walltime sync]
