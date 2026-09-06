@@ -98,31 +98,7 @@ wait_next_lighting?:
                 mov.w   R7$delta_ms_h,R13
                 .unasg  R7$delta_ms_h
                 call    #ulidiv1000 ; seconds @[R13:R12]
-                ; TODO: -- RAT --
-                push.w  R12
-                push.w  R13
-                mov.w   #DT_LOG_AL,R12
-                mov.w   2(SP),R13
-                call    #DT_store
-                mov.w   #DT_LOG_AH,R12
-                mov.w   0(SP),R13
-                call    #DT_store
-                pop.w   R13
-                pop.w   R12
-                ; TODO: -- END --
                 call    #ulidivmod15 ; quaters@[R13:R12]
-                ; TODO: -- RAT --
-                push.w  R12
-                push.w  R13
-                mov.w   #DT_LOG_BL,R12
-                mov.w   2(SP),R13
-                call    #DT_store
-                mov.w   #DT_LOG_BH,R12
-                mov.w   0(SP),R13
-                call    #DT_store
-                pop.w   R13
-                pop.w   R12
-                ; TODO: -- END --
                 call    #ulidivmod5760 ; quaters@R14
                 mov.w   R14,R4
                 .asg    R4,R4$delta_qm
