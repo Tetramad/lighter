@@ -135,8 +135,16 @@ GNSS_timesync:
 rx_loop?:
                 call    #WATCHDOG_feed
                 call    #GNSS_rx_processing
-                tst.w   &synchronized
-                jz      rx_loop?
+                cmp.w   #1,&synchronized
+                jlo     rx_loop?
+                jne     in_synchronized?
+                ; TODO: (re)start timer to measure ticks
+                jmp     rx_loop?
+in_synchronized?:
+                cmp.w   #15,&synchronized
+                jlo     rx_loop?
+                ; TODO: stop timer and measure ticks
+                ;       apply ticks for 15 seconds to RTC
 
                 ; TODO: error handling
                 call    #SYSTICK_get ; -> (systick_l@R12, systick_h@R13)
@@ -298,7 +306,6 @@ reset_data?:
                 mov.b   #DATA_VALID|PARSING_VALID,&flags
                 clr.b   &checksum
                 clr.w   &time
-                clr.w   &synchronized
                 ret
 
 rmc_matched?:
@@ -391,7 +398,9 @@ sentence_complete?:
                 cmp.b   #IN_RMC|DATA_VALID|CHECKSUM_PASSED|PARSING_VALID,&flags
                 jnz     sync_invalid?
                 inc.w   &synchronized
+                ret
 sync_invalid?:
+                clr.w   &synchronized
                 ret
 
 digit_parsing_failed?:
