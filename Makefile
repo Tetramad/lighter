@@ -34,6 +34,7 @@ OBJS = \
 	   gnss.obj \
 	   math.obj \
 	   indicator.obj \
+	   watchdog.obj \
 	   eusci_b.obj
 
 all: main.txt main.dis.txt

@@ -10,6 +10,7 @@
                 .include "math.inc"
                 .include "indicator.inc"
                 .include "datatable.inc"
+                .include "watchdog.inc"
                 .include "eusci_b.inc"
 
                 .def    RESET
@@ -38,6 +39,7 @@ RESET:
                 mov.w   #0C1FFh,&PAREN
 
 ; Initialization
+                call    #WATCHDOG_init
                 call    #SYSTICK_init
                 call    #IND_init
                 call    #UIN_init
@@ -53,8 +55,17 @@ RESET:
 
                 .text
 main:
+                mov.w   #DT_LOG_RESETREASON,R12
+                mov.w   &SYSRSTIV,R13
+                call    #DT_store ; -> (error@R12)
+                mov.w   #DT_LOG_RESETREASON,R12
+                call    #DT_load ; -> (error@R12,value@R13)
+                cmp.w   #SYSRSTIV__WDTIFG,R13
+                jne     skip_watchdog_reset_recovery?
                 call    #GNSS_reset
                 delay   #1000
+skip_watchdog_reset_recovery?:
+
                 call    #GNSS_begin
                 call    #GNSS_end
 

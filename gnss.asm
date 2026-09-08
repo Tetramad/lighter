@@ -6,6 +6,7 @@
                 .include "datatable.inc"
                 .include "math.inc"
                 .include "indicator.inc"
+                .include "watchdog.inc"
 
                 .bss    index,1,1
                 .bss    buffer,3,1
@@ -119,6 +120,9 @@ GNSS_reset:
 GNSS_timesync:
 ; () -> (error@R12)
                 .asmfunc
+                mov.w   #WDTIS__32K,R12
+                call    #WATCHDOG_begin
+
                 clr.b   &index
                 clr.b   &buffer+2
                 clr.b   &buffer+1
@@ -129,6 +133,7 @@ GNSS_timesync:
                 clr.w   &synchronized
 
 rx_loop?:
+                call    #WATCHDOG_feed
                 call    #GNSS_rx_processing
                 tst.w   &synchronized
                 jz      rx_loop?
@@ -144,6 +149,8 @@ rx_loop?:
                 mov.w   #DT_GNSS_QUATERS,R12
                 mov.w   &time,R13
                 call    #DT_store
+
+                call    #WATCHDOG_end
 
                 clr.w   R12
                 ret

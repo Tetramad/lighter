@@ -27,6 +27,8 @@
                 .asg    12,DT_LOG_TILL_SUNRISE
                 .asg    13,DT_LOG_TILL_SUNSET
 
+                .asg    14,DT_LOG_RESETREASON
+
                 .asg    15,DT_LOG_AL
                 .asg    16,DT_LOG_AH
                 .asg    17,DT_LOG_BL
