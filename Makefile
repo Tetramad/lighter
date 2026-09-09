@@ -35,7 +35,8 @@ OBJS = \
 	   math.obj \
 	   indicator.obj \
 	   watchdog.obj \
-	   eusci_b.obj
+	   eusci_b.obj \
+	   timer1_b3.obj
 
 all: main.txt main.dis.txt
 

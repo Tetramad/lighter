@@ -4,6 +4,7 @@
                 .cdecls C,LIST,"msp430.h"
                 .include "math.inc"
                 .include "systick.inc"
+                .include "timer1_b3.inc"
 
                 .bss    systick,4,2
 
@@ -21,6 +22,8 @@ SYSTICK_init:
                 clr.w   &systick+2
 
                 bis.w   #RTCIE,&RTCCTL
+
+                call    #TIMER1_B3_init
                 ret
                 .endasmfunc
 
@@ -41,12 +44,7 @@ SYSTICK_get:
 SYSTICK_delay_ms:
 ; (delay_ms@R12) -> ()
                 .asmfunc
-                mov.w   &systick+0,R13
-$1:
-                mov.w   &systick+0,R14
-                sub.w   R13,R14
-                cmp.w   R12,R14
-                jnc     $1
+                call    #TIMER1_B3_delay_ms
                 ret
                 .endasmfunc
 
