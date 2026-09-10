@@ -20,6 +20,10 @@ indclr:         .macro
                 bic.b   #BIT0,&P2DIR
                 .endm
 
+indtgl:         .macro
+                xor.b   #BIT0,&P2DIR
+                .endm
+
 morse_KA:       .macro
                 push.w  R12
                 push.w  R13

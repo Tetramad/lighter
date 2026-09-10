@@ -138,13 +138,12 @@ rx_loop?:
                 cmp.w   #1,&synchronized
                 jlo     rx_loop?
                 jne     in_synchronized?
-                ; TODO: (re)start timer to measure ticks
+                call    #SYSTICK_calibration_start
                 jmp     rx_loop?
 in_synchronized?:
-                cmp.w   #15,&synchronized
+                cmp.w   #(2+15),&synchronized
                 jlo     rx_loop?
-                ; TODO: stop timer and measure ticks
-                ;       apply ticks for 15 seconds to RTC
+                call    #SYSTICK_calibration_stop_and_update
 
                 ; TODO: error handling
                 call    #SYSTICK_get ; -> (systick_l@R12, systick_h@R13)

@@ -29,9 +29,6 @@
 
                 .asg    14,DT_LOG_RESETREASON
 
-                .asg    15,DT_LOG_AL
-                .asg    16,DT_LOG_AH
-                .asg    17,DT_LOG_BL
-                .asg    18,DT_LOG_BH
+                .asg    15,DT_SYSTICK_RTCMOD
 
-                .asg    19,DT_RECORD_LENGTH
+                .asg    16,DT_RECORD_LENGTH

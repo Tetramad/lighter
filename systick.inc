@@ -9,9 +9,13 @@
 
                 .global SYSTICK_delay_ms
                 ; (delay_ms@R12) -> ()
-
                 .global SYSTICK_elapse
                 ; (delay_quaters@R12) -> ()
+
+                .global SYSTICK_calibration_start
+                ; () -> ()
+                .global SYSTICK_calibration_stop_and_update
+                ; () -> ()
 
 delay:          .macro  millis
 ; (delay_ms@R12) -> ()
