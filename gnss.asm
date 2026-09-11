@@ -2,11 +2,13 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
+                .include "macros.inc"
                 .include "systick.inc"
                 .include "datatable.inc"
                 .include "math.inc"
                 .include "indicator.inc"
                 .include "watchdog.inc"
+                .include "ascii.inc"
 
                 .bss    index,1,1
                 .bss    buffer,3,1
@@ -41,15 +43,13 @@ GNSS_begin:
                 bic.b   #BIT6|BIT7,&P1REN
                 bis.b   #BIT6|BIT7,&P1SEL0
 
-                call    #GNSS_wakeup
+                pcall   GNSS_wakeup
 
                 ; TODO: better wakeup delay
-                delay   #1000
+                pcall   SYSTICK_delay_ms,#1000
 
-                mov.w   #GNSS_INIT_CMD,R12
-                call    #GNSS_transmit
-                mov.w   #GNSS_DISTXT_CMD,R12
-                call    #GNSS_transmit
+                pcall   GNSS_transmit,#GNSS_INIT_CMD
+                pcall   GNSS_transmit,#GNSS_DISTXT_CMD
 
                 ret
                 .endasmfunc
@@ -59,13 +59,12 @@ GNSS_begin:
 GNSS_end:
 ; () -> ()
                 .asmfunc
-                mov.w   #GNSS_BACKUP_CMD,R12
-                call    #GNSS_transmit
+                pcall   GNSS_transmit,#GNSS_BACKUP_CMD
 
                 bic.w   #UCRXIE,&UCA0IE
 
                 ; TODO: better backup sleep delay
-                delay   #1000
+                pcall	SYSTICK_delay_ms,#1000
 
                 bic.b   #BIT6|BIT7,&P1SEL0
                 bis.b   #BIT6|BIT7,&P1REN
@@ -89,7 +88,7 @@ GNSS_wakeup:
 ; () -> ()
                 .asmfunc
                 bis.b   #BIT6,&P2OUT
-                delay   #1500
+                pcall	SYSTICK_delay_ms,#1500
                 bic.b   #BIT6,&P2OUT
                 ret
                 .endasmfunc
@@ -110,7 +109,7 @@ GNSS_reset:
 ; () -> ()
                 .asmfunc
                 bis.b   #BIT7,&P2DIR
-                delay   #500
+                pcall	SYSTICK_delay_ms,#500
                 bic.b   #BIT7,&P2DIR
                 ret
                 .endasmfunc
@@ -120,8 +119,7 @@ GNSS_reset:
 GNSS_timesync:
 ; () -> (error@R12)
                 .asmfunc
-                mov.w   #WDTIS__32K,R12
-                call    #WATCHDOG_begin
+                pcall   WATCHDOG_begin,#WDTIS__32K
 
                 clr.b   &index
                 clr.b   &buffer+2
@@ -133,27 +131,24 @@ GNSS_timesync:
                 clr.w   &synchronized
 
 rx_loop?:
-                call    #WATCHDOG_feed
-                call    #GNSS_rx_processing
+                pcall   WATCHDOG_feed
+                pcall   GNSS_rx_processing
                 cmp.w   #1,&synchronized
                 jlo     rx_loop?
                 jne     in_synchronized?
-                call    #SYSTICK_calibration_start
+                pcall   SYSTICK_calibration_start
                 jmp     rx_loop?
 in_synchronized?:
                 cmp.w   #(2+15),&synchronized ; TODO: review count
                 jlo     rx_loop?
-                call    #SYSTICK_calibration_stop_and_update
+                pcall   SYSTICK_calibration_stop_and_update
 
-                call    #SYSTICK_get ; -> (systick@R12)
+                pcall   SYSTICK_get ; -> (systick@R12)
                 mov.w   R12,R13
-                mov.w   #DT_GNSS_TICK,R12
-                call    #DT_store
-                mov.w   #DT_GNSS_TIME,R12
-                mov.w   &time,R13
-                call    #DT_store
+                pcall   DT_store,#DT_GNSS_TICK, ; -> (error@R12)
+                pcall   DT_store,#DT_GNSS_TIME,&time ; -> (error@R12)
 
-                call    #WATCHDOG_end
+                pcall   WATCHDOG_end
 
                 clr.w   R12
                 ret
@@ -164,8 +159,7 @@ in_synchronized?:
 GNSS_reftick:
 ; () -> (error@R12,reftick@R13)
                 .asmfunc
-                mov.w   #DT_GNSS_TICK,R12
-                call    #DT_load ; -> (error@R12,value@R13)
+                pcall   DT_load,#DT_GNSS_TICK ; -> (error@R12,value@R13)
                 ret
                 .endasmfunc
 
@@ -174,8 +168,7 @@ GNSS_reftick:
 GNSS_reftime:
 ; () -> (error@R12,reftime@R13)
                 .asmfunc
-                mov.w   #DT_GNSS_TIME,R12
-                call    #DT_load
+                pcall   DT_load,#DT_GNSS_TIME ; -> (error@R12,value@R13)
                 ret
                 .endasmfunc
 
@@ -302,8 +295,7 @@ parse_hours?:
                 call    #parse_digit2 ; -> (chr0@R12,chr1@R13) -> (error@R12,n@R13)
                 tst.w   R12
                 jn      digit_parsing_failed?
-                mov.w   R13,R12
-                call    #uimul60 ; -> (u@R12)
+                pcall   uimul60,R13 ; -> (u@R12)
                 rla.w   R12
                 rla.w   R12
                 add.w   R12,&time
@@ -397,8 +389,7 @@ digit_parsing_failed?:
 parse_digit2:
 ; (chr0@R12,chr1@R13) -> (error@R12,n@R13)
                 .asmfunc
-                mov.w   #'0',R14
-                call    #parse_digit3
+                pcall   parse_digit3,,,#ASCII_0
                 ret
                 .endasmfunc
 
@@ -417,11 +408,10 @@ parse_digit3:
                 jc      on_error?
                 push.w  R12
                 push.w  R13
-                mov.w   R14,R12
-                call    #uimul10 ; -> (u@R12)
+                pcall   uimul10,R14 ; -> (u@R12)
                 add.w   R12,0(SP)
                 pop.w   R12
-                call    #uimul10 ; -> (u@R12)
+                pcall   uimul10, ; -> (u@R12)
                 pop.w   R13
                 add.w   R12,R13
                 clr.w   R12
@@ -462,8 +452,7 @@ chr1_not_uppercase?:
                 jc      on_error?
 
                 push.w  R12
-                mov.w   R13,R12
-                call    #uimul16 ; -> (u@R12)
+                pcall   uimul16,R13 ; -> (u@R12)
                 pop.w   R13
                 add.w   R12,R13
                 clr.w   R12

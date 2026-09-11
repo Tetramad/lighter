@@ -52,8 +52,7 @@ UIN_read_and_decode:
                 waitbis #ADCIFG0,&ADCIFG
                 mov.w   &ADCMEM0,R13
                 bic.w   #ADCENC,&ADCCTL0
-                mov.w   #DT_UIN_TZ_RAW,R12
-                call    #DT_store
+                pcall   DT_store,#DT_UIN_TZ_RAW, ; -> (error@R12)
 
                 bic.w   #ADCINCH,&ADCMCTL0
                 bis.w   #ADCINCH_4,&ADCMCTL0
@@ -61,8 +60,7 @@ UIN_read_and_decode:
                 waitbis #ADCIFG0,&ADCIFG
                 mov.w   &ADCMEM0,R13
                 bic.w   #ADCENC,&ADCCTL0
-                mov.w   #DT_UIN_SR_RAW,R12
-                call    #DT_store
+                pcall   DT_store,#DT_UIN_SR_RAW, ; -> (error@R12)
 
                 bic.w   #ADCINCH,&ADCMCTL0
                 bis.w   #ADCINCH_5,&ADCMCTL0
@@ -70,8 +68,7 @@ UIN_read_and_decode:
                 waitbis #ADCIFG0,&ADCIFG
                 mov.w   &ADCMEM0,R13
                 bic.w   #ADCENC,&ADCCTL0
-                mov.w   #DT_UIN_SS_RAW,R12
-                call    #DT_store
+                pcall   DT_store,#DT_UIN_SS_RAW, ; -> (error@R12)
 
                 .newblock
                 ; -12:00:00 ~ 12:00:00
@@ -81,8 +78,7 @@ UIN_read_and_decode:
                 ; 30minutes * [-24,24]
                 ; 120quaters * [-24,24]
                 ; 01111000b * [-24,24]
-                mov.w   #DT_UIN_TZ_RAW,R12
-                call    #DT_load ; -> (error@R12,timezone_raw@R13)
+                pcall   DT_load,#DT_UIN_TZ_RAW ; -> (error@R12,timezone_raw@R13)
                 mov.w   R13,R12
                 cmp.w   #20,R12
                 jc      lower_clamped?
@@ -93,15 +89,13 @@ lower_clamped?:
                 mov.w   #999,R12
 upper_clampled?:
                 sub.w   #20,R12
-                mov.w   #20,R13
-                call    #uidivmodui ; -> (quot@R12,rem@R13)
+                pcall   uidivmodui,,#20 ; -> (quot@R12,rem@R13)
                 sub.w   #24,R12
                 ;call   #uimul120
-                call    #uimul60 ; -> (u@R12)
+                pcall   uimul60, ; -> (u@R12)
                 rla.w   R12
                 mov.w   R12,R13
-                mov.w   #DT_UIN_TZ,R12
-                call    #DT_store
+                pcall   DT_store,#DT_UIN_TZ, ; -> (error@R12)
 
                 ; TODO: white night?
                 .newblock
@@ -112,8 +106,7 @@ upper_clampled?:
                 ; 30minutes * [0,23]
                 ; 120quaters * [0,23]
                 ; 01111000b * [0,23]
-                mov.w   #DT_UIN_SR_RAW,R12
-                call    #DT_load ; -> (error@R12,sunrise_raw@R13)
+                pcall   DT_load,#DT_UIN_SR_RAW ; -> (error@R12,sunrise_raw@R13)
                 mov.w   R13,R12
                 cmp.w   #30,R12
                 jc      lower_clamped?
@@ -124,20 +117,17 @@ lower_clamped?:
                 mov.w   #989,R12
 upper_clampled?:
                 sub.w   #30,R12
-                mov.w   #40,R13
-                call    #uidivmodui ; -> (quot@R12,rem@R13)
+                pcall   uidivmodui,,#40 ; -> (quot@R12,rem@R13)
                 ;call   #uimul120
-                call    #uimul60 ; -> (u@R12)
+                pcall   uimul60, ; -> (u@R12)
                 rla.w   R12
                 mov.w   R12,R4
 
-                mov.w   #DT_UIN_TZ,R12
-                call    #DT_load ; -> (error@R12,timezone@R13)
+                pcall   DT_load,#DT_UIN_TZ ; -> (error@R12,timezone@R13)
                 mov.w   R4,R12
                 sub.w   R13,R12
-                call    #tick_to_time ; -> (error@R12,time@R13)
-                mov.w   #DT_UIN_SR,R12
-                call    #DT_store
+                pcall   tick_to_time, ; -> (error@R12,time@R13)
+                pcall   DT_store,#DT_UIN_SR, ; -> (error@R12)
 
                 .newblock
                 ; 12:00:00 ~ 23:30:00
@@ -147,8 +137,7 @@ upper_clampled?:
                 ; 30minutes * [24, 47]
                 ; 120quaters * [24, 47]
                 ; 01111000b * [24, 47]
-                mov.w   #DT_UIN_SS_RAW,R12
-                call    #DT_load ; -> (error@R12,sunrise_raw@R13)
+                pcall   DT_load,#DT_UIN_SS_RAW ; -> (error@R12,sunrise_raw@R13)
                 mov.w   R13,R12
                 cmp.w   #30,R12
                 jc      lower_clamped?
@@ -159,21 +148,18 @@ lower_clamped?:
                 mov.w   #989,R12
 upper_clampled?:
                 sub.w   #30,R12
-                mov.w   #40,R13
-                call    #uidivmodui ; -> (quot@R12,rem@R13)
+                pcall   uidivmodui,,#40 ; -> (quot@R12,rem@R13)
                 add.w   #24,R12
                 ;call   #uimul120
-                call    #uimul60 ; -> (u@R12)
+                pcall   uimul60, ; -> (u@R12)
                 rla.w   R12
                 mov.w   R12,R4
 
-                mov.w   #DT_UIN_TZ,R12
-                call    #DT_load ; -> (error@R12,timezone@R13)
+                pcall   DT_load,#DT_UIN_TZ ; -> (error@R12,timezone@R13)
                 mov.w   R4,R12
                 sub.w   R13,R12
-                call    #tick_to_time ; -> (error@R12,time@R12)
-                mov.w   #DT_UIN_SS,R12
-                call    #DT_store
+                pcall   tick_to_time, ; -> (error@R12,time@R12)
+                pcall   DT_store,#DT_UIN_SS, ; -> (error@R12)
 
                 clr.w   R12
                 pop.w   R4
@@ -185,14 +171,7 @@ upper_clampled?:
 UIN_timezone:
 ; () -> (error@R12, timezonetick@R13)
                 .asmfunc
-                mov.w   #DT_UIN_TZ,R12
-                call    #DT_load
-                tst.w   R12
-                jn      error?
-                clr.w   R12
-                ret
-error?:
-                mov.w   #-1,R12
+                pcall   DT_load,#DT_UIN_TZ ; -> (error@R12,value@R13)
                 ret
                 .endasmfunc
 
@@ -201,15 +180,7 @@ error?:
 UIN_sunrise:
 ; () -> (error@R12, sunrisetime@R13)
                 .asmfunc
-                mov.w   #DT_UIN_SR,R12
-                call    #DT_load
-                tst.w   R12
-                jn      error?
-
-                clr.w   R12
-                ret
-error?:
-                mov.w   #-1,R12
+                pcall   DT_load,#DT_UIN_SR ; -> (error@R12,value@R13)
                 ret
                 .endasmfunc
 
@@ -218,14 +189,6 @@ error?:
 UIN_sunset:
 ; () -> (error@R12, sunsettime@R13)
                 .asmfunc
-                mov.w   #DT_UIN_SS,R12
-                call    #DT_load
-                tst.w   R12
-                jn      error?
-
-                clr.w   R12
-                ret
-error?:
-                mov.w   #-1,R12
+                pcall   DT_load,#DT_UIN_SS ; -> (error@R12,value@R13)
                 ret
                 .endasmfunc

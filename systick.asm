@@ -2,6 +2,7 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
+                .include "macros.inc"
                 .include "math.inc"
                 .include "systick.inc"
                 .include "timer1_b3.inc"
@@ -27,7 +28,7 @@ SYSTICK_init:
 
                 bis.w   #RTCIE,&RTCCTL
 
-                call    #TIMER1_B3_init
+                pcall   TIMER1_B3_init
                 ret
                 .endasmfunc
 
@@ -45,7 +46,7 @@ SYSTICK_get:
 SYSTICK_delay_ms:
 ; (delay_ms@R12) -> ()
                 .asmfunc
-                call    #TIMER1_B3_delay_ms
+                pcall   TIMER1_B3_delay_ms,
                 ret
                 .endasmfunc
 
@@ -106,9 +107,7 @@ skip_mult_loop?:
                 mov.w   R4,&RTCMOD
 
                 ; TODO: save the counter start/stop and the RTCMOD value to the datatable
-                mov.w   #DT_SYSTICK_RTCMOD,R12
-                mov.w   R4,R13
-                call    #DT_store
+                pcall   DT_store,#DT_SYSTICK_RTCMOD,R4
 
                 pop.w   R5
                 pop.w   R4

@@ -39,14 +39,14 @@ RESET:
                 mov.w   #0C1FFh,&PAREN
 
 ; Initialization
-                call    #WATCHDOG_init
-                call    #SYSTICK_init
-                call    #IND_init
-                call    #UIN_init
-                call    #GNSS_wakeup_init
-                call    #GNSS_reset_init
-                call    #LC_power_init
-                call    #eUSCI_B0_init
+                pcall   WATCHDOG_init
+                pcall   SYSTICK_init
+                pcall   IND_init
+                pcall   UIN_init
+                pcall   GNSS_wakeup_init
+                pcall   GNSS_reset_init
+                pcall   LC_power_init
+                pcall   eUSCI_B0_init
 
                 bic.w   #LOCKLPM5,&PM5CTL0
                 eint
@@ -55,45 +55,40 @@ RESET:
 
                 .text
 main:
-                mov.w   #DT_LOG_RESETREASON,R12
-                mov.w   &SYSRSTIV,R13
-                call    #DT_store ; -> (error@R12)
-                mov.w   #DT_LOG_RESETREASON,R12
-                call    #DT_load ; -> (error@R12,value@R13)
+                pcall   DT_store,#DT_LOG_RESETREASON,&SYSRSTIV ; -> (error@R12)
+                pcall   DT_load,#DT_LOG_RESETREASON ; -> (error@R12,value@R13)
                 cmp.w   #SYSRSTIV__WDTIFG,R13
                 jne     skip_watchdog_reset_recovery?
-                call    #GNSS_reset
-                delay   #1000
+                pcall   GNSS_reset
+                pcall   SYSTICK_delay_ms,#1000
 skip_watchdog_reset_recovery?:
 
-                call    #GNSS_begin
-                call    #GNSS_end
+                pcall   GNSS_begin
+                pcall   GNSS_end
 
 read_user_configuration?:
-                call    #UIN_begin
-                call    #UIN_read_and_decode
+                pcall   UIN_begin
+                pcall   UIN_read_and_decode ; -> (error@R12)
                 tsterr  R12,on_error
-                call    #UIN_end
+                pcall   UIN_end
 
 main_loop?:
 walltime_sync?:
-                call    #GNSS_begin
-                call    #GNSS_timesync
-                call    #GNSS_end
+                pcall   GNSS_begin
+                pcall   GNSS_timesync
+                pcall   GNSS_end
 
 wait_next_lighting?:
                 .asg    R4,R4$gnssreftick
                 .asg    R6,R6$systick
 
-                call    #GNSS_reftick ; -> (error@R12,reftick@R13)
+                pcall   GNSS_reftick ; -> (error@R12,reftick@R13)
                 tsterr  R12,on_error
                 mov.w   R13,R4$gnssreftick
-                call    #SYSTICK_get ; -> (systick@R12)
+                pcall   SYSTICK_get ; -> (systick@R12)
                 mov.w   R12,R6$systick
 
-                mov.w   #DT_LOG_LATEST_TICK,R12
-                mov.w   R6$systick,R13
-                call    #DT_store
+                pcall   DT_store,#DT_LOG_LATEST_TICK,R6$systick ; -> (error@R12)
 
                 sub.w   R4$gnssreftick,R6$systick
 
@@ -102,7 +97,7 @@ wait_next_lighting?:
                 .asg    R6,R6$deltatick
                 .asg    R5,R5$gnssreftime
 
-                call    #GNSS_reftime ; -> (error@R12,reftime@R13)
+                pcall   GNSS_reftime ; -> (error@R12,reftime@R13)
                 tsterr  R12,on_error
                 mov.w   R13,R5$gnssreftime
 
@@ -110,7 +105,7 @@ wait_next_lighting?:
 
                 mov.w   R5$gnssreftime,R12
                 add.w   R6$deltatick,R12
-                call    #tick_to_time ; -> (error@R12,time@R13)
+                pcall   tick_to_time, ; -> (error@R12,time@R13)
                 mov.w   R13,R4$currenttime
 
                 .unasg  R5$gnssreftime
@@ -119,9 +114,9 @@ wait_next_lighting?:
                 .asg    R5,R5$sunrisetime
                 .asg    R6,R6$sunsettime
 
-                call    #UIN_sunrise
+                pcall   UIN_sunrise ; -> (error@R12,sunrisetime@R13)
                 mov.w   R13,R5$sunrisetime
-                call    #UIN_sunset
+                pcall   UIN_sunset ; -> (error@R12,sunsettime@R13)
                 mov.w   R13,R6$sunsettime
 
                 .asg    R5,R5$untilsunrisetick
@@ -129,37 +124,29 @@ wait_next_lighting?:
 
                 mov.w   R5$sunrisetime,R12
                 sub.w   R4$currenttime,R12
-                call    #tick_to_time ; -> (error@R12,time@R13)
+                pcall   tick_to_time, ; -> (error@R12,time@R13)
                 mov.w   R13,R5$untilsunrisetick
                 mov.w   R6$sunsettime,R12
                 sub.w   R4$currenttime,R12
-                call    #tick_to_time ; -> (error@R12,time@R13)
+                pcall   tick_to_time, ; -> (error@R12,time@R13)
                 mov.w   R13,R6$untilsunsettick
 
                 .unasg  R5$sunrisetime
                 .unasg  R6$sunsettime
 
-                mov.w   #DT_LOG_CURRENT_TIME,R12
-                mov.w   R4$currenttime,R13
-                call    #DT_store
-                mov.w   #DT_LOG_UNTIL_SUNRISE_TIME,R12
-                mov.w   R5$untilsunrisetick,R13
-                call    #DT_store
-                mov.w   #DT_LOG_UNTIL_SUNSET_TIME,R12
-                mov.w   R6$untilsunsettick,R13
-                call    #DT_store
+                pcall   DT_store,#DT_LOG_CURRENT_TIME,R4$currenttime ; -> (error@R12)
+                pcall   DT_store,#DT_LOG_UNTIL_SUNRISE_TIME,R5$untilsunrisetick ; -> (error@R12)
+                pcall   DT_store,#DT_LOG_UNTIL_SUNSET_TIME,R6$untilsunsettick ; -> (error@R12)
 
                 cmp.w   R6$untilsunsettick,R5$untilsunrisetick
                 jl      wait_sunrise
                 jmp     wait_sunset
 
 wait_sunset:
-                mov.w   R6$untilsunsettick,R12
-                call    #SYSTICK_elapse
+                pcall   SYSTICK_elapse,R6$untilsunsettick
                 jmp     sunset
 wait_sunrise:
-                mov.w   R5$untilsunrisetick,R12
-                call    #SYSTICK_elapse
+                pcall   SYSTICK_elapse,R5$untilsunrisetick
                 jmp     sunrise
 
                 .unasg  R4$currenttime
@@ -167,36 +154,24 @@ wait_sunrise:
                 .unasg  R6$untilsunsettick
 
 sunrise:
-                mov.w   #0,R12
-                mov.w   #0,R13
-                call    #LC_begin
-                mov.w   #LC_STEP_ON,R12
-                mov.w   #LC_STEP_OFF,R13
-                call    #LC_transit
-                mov.w   #LC_STEP_OFF,R12
-                mov.w   #LC_STEP_ON,R13
-                call    #LC_transit
-                delay   #30000
-                call    #LC_end
+                pcall   LC_begin,#0,#0
+                pcall   LC_transit,#LC_STEP_ON,#LC_STEP_OFF
+                pcall   LC_transit,#LC_STEP_OFF,#LC_STEP_ON
+                pcall   SYSTICK_delay_ms,#30000
+                pcall   LC_end
                 jmp     wait_next_lighting?
 
 sunset:
-                mov.w   #0,R12
-                mov.w   #100,R13
-                call    #LC_begin
-                mov.w   #LC_STEP_ON,R12
-                mov.w   #LC_STEP_OFF,R13
-                call    #LC_transit
-                mov.w   #LC_STEP_OFF,R12
-                mov.w   #LC_STEP_OFF,R13
-                call    #LC_transit
-                delay   #30000
-                call    #LC_end
+                pcall   LC_begin,#0,#100
+                pcall   LC_transit,#LC_STEP_ON,#LC_STEP_OFF
+                pcall   LC_transit,#LC_STEP_OFF,#LC_STEP_OFF
+                pcall   SYSTICK_delay_ms,#30000
+                pcall   LC_end
                 jmp     walltime_sync?
 
 on_error:
                 dint
-                call    #IND_error
+                pcall   IND_error
                 jmp     hang?
 
 hang?:          jmp     hang?

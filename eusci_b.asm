@@ -2,6 +2,7 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
+                .include "macros.inc"
                 .include "datatable.inc"
 
                 .bss    dbuffer,2,2
@@ -65,7 +66,7 @@ data_received?:
                 mov.b   &UCB0RXBUF,R12
                 cmp.w   #DT_RECORD_LENGTH,R12
                 jhs     out_of_bound?
-                call    #DT_load
+                pcall   DT_load, ; -> (error@R12,value@R13)
                 tst.w   R12
                 jn      data_load_error?
                 mov.w   R13,&dbuffer

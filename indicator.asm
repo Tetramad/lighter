@@ -2,6 +2,7 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
+                .include "macros.inc"
                 .include "systick.inc"
 
                 .asg    0FFFFh,IND_ERROR_HALF_PERIOD
@@ -96,14 +97,14 @@ state_set?:
                 rrc.w   R6
                 rrc.w   R5
                 rrc.w   R4
-                delay   #IND_MORSE_TICK
+                pcall	SYSTICK_delay_ms,#IND_MORSE_TICK
                 jmp     loop?
 
 last_3space?:
                 bic.b   #BIT0,&P2DIR
-                delay   #IND_MORSE_TICK
-                delay   #IND_MORSE_TICK
-                delay   #IND_MORSE_TICK
+                pcall	SYSTICK_delay_ms,#IND_MORSE_TICK
+                pcall	SYSTICK_delay_ms,#IND_MORSE_TICK
+                pcall	SYSTICK_delay_ms,#IND_MORSE_TICK
 
                 pop.w   R7
                 pop.w   R6
@@ -168,7 +169,7 @@ IND_morse_digit:
                                                 ; 0
 
 out_morse?:
-                call    #IND_morse
+                pcall   IND_morse
 
                 pop.w   R4
                 ret

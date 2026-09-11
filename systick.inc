@@ -16,9 +16,3 @@
                 ; () -> ()
                 .global SYSTICK_calibration_stop_and_update
                 ; () -> ()
-
-delay:          .macro  millis
-; (delay_ms@R12) -> ()
-                mov.w   :millis:,R12
-                call    #SYSTICK_delay_ms
-                .endm

@@ -2,6 +2,7 @@
 ; vim: path+=$CCS/ccs_base/msp430/include/
 
                 .cdecls C,LIST,"msp430.h"
+                .include "macros.inc"
                 .include "systick.inc"
 
                 .text
@@ -87,7 +88,7 @@ cold_downward?: cmp.w   #1,&TB0CCR2
                 jmp     cold_stepping_complete?
 cold_stepping_complete?:
 
-                delay   #100
+                pcall   SYSTICK_delay_ms,#100
                 tst.w   R4
                 jnz     stepping?
 
