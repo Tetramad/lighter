@@ -250,9 +250,9 @@ prepare_next_round?:
                 .endasmfunc
 
                 .text
-                .def    quaters_unsigned
-quaters_unsigned:
-; (quaters@R12) -> (error@R12,quaters_unsigned@R13)
+                .def    tick_to_time
+tick_to_time:
+; (tick@R12) -> (error@R12,time@R13)
                 .asmfunc
                 cmp.w   #0,R12
                 jl      fold_up?

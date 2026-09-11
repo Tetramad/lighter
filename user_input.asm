@@ -135,7 +135,7 @@ upper_clampled?:
                 call    #DT_load ; -> (error@R12,timezone@R13)
                 mov.w   R4,R12
                 sub.w   R13,R12
-                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
+                call    #tick_to_time ; -> (error@R12,time@R13)
                 mov.w   #DT_UIN_SR,R12
                 call    #DT_store
 
@@ -171,7 +171,7 @@ upper_clampled?:
                 call    #DT_load ; -> (error@R12,timezone@R13)
                 mov.w   R4,R12
                 sub.w   R13,R12
-                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R12)
+                call    #tick_to_time ; -> (error@R12,time@R12)
                 mov.w   #DT_UIN_SS,R12
                 call    #DT_store
 
@@ -183,7 +183,7 @@ upper_clampled?:
                 .text
                 .def    UIN_timezone
 UIN_timezone:
-; () -> (error@R12, timezone_quaters@R13)
+; () -> (error@R12, timezonetick@R13)
                 .asmfunc
                 mov.w   #DT_UIN_TZ,R12
                 call    #DT_load
@@ -199,7 +199,7 @@ error?:
                 .text
                 .def    UIN_sunrise
 UIN_sunrise:
-; () -> (error@R12, sunrise_quaters@R13)
+; () -> (error@R12, sunrisetime@R13)
                 .asmfunc
                 mov.w   #DT_UIN_SR,R12
                 call    #DT_load
@@ -216,7 +216,7 @@ error?:
                 .text
                 .def    UIN_sunset
 UIN_sunset:
-; () -> (error@R12, sunset_quaters@R13)
+; () -> (error@R12, sunsettime@R13)
                 .asmfunc
                 mov.w   #DT_UIN_SS,R12
                 call    #DT_load

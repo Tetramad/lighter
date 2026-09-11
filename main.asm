@@ -82,15 +82,10 @@ walltime_sync?:
                 call    #GNSS_end
 
 wait_next_lighting?:
-                ; tick_delta = tick_sys - tick_gnss
-                ; quater_delta = tick_delta / TICK_PER_QUATER
-                ; -- TICK_PER_QUATER = 1
-                ; quater_delta = quater_delta % QUATER_PER_DAY
-                ; -time in symbol -> Quater-minutes
                 .asg    R4,R4$gnssreftick
                 .asg    R6,R6$systick
 
-                call    #GNSS_reftick ; -> (error@R12,gnsstick@R13)
+                call    #GNSS_reftick ; -> (error@R12,reftick@R13)
                 tsterr  R12,on_error
                 mov.w   R13,R4$gnssreftick
                 call    #SYSTICK_get ; -> (systick@R12)
@@ -104,22 +99,22 @@ wait_next_lighting?:
 
                 .unasg  R4$gnssreftick
                 .unasg  R6$systick
-                .asg    R6,R6$deltatime
+                .asg    R6,R6$deltatick
                 .asg    R5,R5$gnssreftime
 
-                call    #GNSS_reftime ; -> (error@R12,quaters@R13)
+                call    #GNSS_reftime ; -> (error@R12,reftime@R13)
                 tsterr  R12,on_error
                 mov.w   R13,R5$gnssreftime
 
                 .asg    R4,R4$currenttime
 
                 mov.w   R5$gnssreftime,R12
-                add.w   R6$deltatime,R12
-                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
+                add.w   R6$deltatick,R12
+                call    #tick_to_time ; -> (error@R12,time@R13)
                 mov.w   R13,R4$currenttime
 
                 .unasg  R5$gnssreftime
-                .unasg  R6$deltatime
+                .unasg  R6$deltatick
 
                 .asg    R5,R5$sunrisetime
                 .asg    R6,R6$sunsettime
@@ -134,11 +129,11 @@ wait_next_lighting?:
 
                 mov.w   R5$sunrisetime,R12
                 sub.w   R4$currenttime,R12
-                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
+                call    #tick_to_time ; -> (error@R12,time@R13)
                 mov.w   R13,R5$untilsunrisetick
                 mov.w   R6$sunsettime,R12
                 sub.w   R4$currenttime,R12
-                call    #quaters_unsigned ; -> (error@R12,quaters_unsigned@R13)
+                call    #tick_to_time ; -> (error@R12,time@R13)
                 mov.w   R13,R6$untilsunsettick
 
                 .unasg  R5$sunrisetime

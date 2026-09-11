@@ -21,14 +21,8 @@
                 .global uidivmodui
                 ; (dividend@R12,divider@R13) -> (quot@R12,rem@R13)
 
-                .global quaters_unsigned
-                ; (quaters@R12) -> (error@R12,quaters_unsigned@R13)
+                .global tick_to_time
+                ; (tick@R12) -> (error@R12,time@R13)
 
-                ; quater minutes or quaters
-                ; 0000 0000 0000 0000 b
-                ;                     -> quater minutes (signed)
-                ;
-                ; e.g. 0000000000000001b => 15 seconds
-                ;      0000000000000100b => 1 minute
-                ;      0000000011110000b => 1 hour(60 minutes)
-                ;      1111111100010000b => -1 hours
+                ; -time -> Quater-minutes (15 seconds LSB) in absolute
+                ; -tick -> Quater-minutes (15 seconds LSB) in relative

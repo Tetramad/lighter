@@ -162,7 +162,7 @@ in_synchronized?:
                 .text
                 .def    GNSS_reftick
 GNSS_reftick:
-; () -> (error@R12,tick@R13)
+; () -> (error@R12,reftick@R13)
                 .asmfunc
                 mov.w   #DT_GNSS_TICK,R12
                 call    #DT_load ; -> (error@R12,value@R13)
@@ -172,7 +172,7 @@ GNSS_reftick:
                 .text
                 .def    GNSS_reftime
 GNSS_reftime:
-; () -> (error@R12,quaters@R13)
+; () -> (error@R12,reftime@R13)
                 .asmfunc
                 mov.w   #DT_GNSS_TIME,R12
                 call    #DT_load
