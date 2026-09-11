@@ -19,6 +19,6 @@
                 ; () -> (error@R12)
 
                 .global GNSS_reftick
-                ; () -> (error@R12,tick_l@R13,tick_h@R14)
+                ; () -> (error@R12,tick@R13)
                 .global GNSS_reftime
                 ; () -> (error@R12,quaters@R13)

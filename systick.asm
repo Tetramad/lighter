@@ -34,12 +34,9 @@ SYSTICK_init:
                 .text
                 .def    SYSTICK_get
 SYSTICK_get:
-; () -> (systick_l@R12,systick_h@R13)
+; () -> (systick_l@R12)
                 .asmfunc
-                bic.w   #RTCIE,&RTCCTL
                 mov.w   &systick,R12
-                clr.w   R13
-                bis.w   #RTCIE,&RTCCTL
                 ret
                 .endasmfunc
 
@@ -57,16 +54,12 @@ SYSTICK_delay_ms:
 SYSTICK_elapse:
 ; (delay_quaters@R12) -> ()
                 .asmfunc
-                push.w  R12
-                tst.w   0(SP)
-                jz      done?
+                mov.w   &systick,R13
 loop?:
-                delay   #15000
-                dec.w   0(SP)
-                tst.w   0(SP)
-                jnz     loop?
-done?:
-                pop.w   R3
+                mov.w   &systick,R14
+                sub.w   R13,R14
+                cmp.w   R12,R14
+                jlo     loop?
                 ret
                 .endasmfunc
 

@@ -16,19 +16,17 @@
                 .asg    4,DT_UIN_SS_RAW
                 .asg    5,DT_UIN_SS
 
-                .asg    6,DT_GNSS_TICK_L
-                .asg    7,DT_GNSS_TICK_H
-                .asg    8,DT_GNSS_QUATERS
+                .asg    6,DT_GNSS_TICK
+                .asg    7,DT_GNSS_TIME
 
-                .asg    9,DT_LOG_LATEST_TICK_L
-                .asg    10,DT_LOG_LATEST_TICK_H
+                .asg    8,DT_LOG_LATEST_TICK
 
-                .asg    11,DT_LOG_CURRENT
-                .asg    12,DT_LOG_TILL_SUNRISE
-                .asg    13,DT_LOG_TILL_SUNSET
+                .asg    9,DT_LOG_CURRENT_TIME
+                .asg    10,DT_LOG_UNTIL_SUNRISE_TIME
+                .asg    11,DT_LOG_UNTIL_SUNSET_TIME
 
-                .asg    14,DT_LOG_RESETREASON
+                .asg    12,DT_LOG_RESETREASON
 
-                .asg    15,DT_SYSTICK_RTCMOD
+                .asg    13,DT_SYSTICK_RTCMOD
 
-                .asg    16,DT_RECORD_LENGTH
+                .asg    14,DT_RECORD_LENGTH

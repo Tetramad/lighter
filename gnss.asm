@@ -141,19 +141,15 @@ rx_loop?:
                 call    #SYSTICK_calibration_start
                 jmp     rx_loop?
 in_synchronized?:
-                cmp.w   #(2+15),&synchronized
+                cmp.w   #(2+15),&synchronized ; TODO: review count
                 jlo     rx_loop?
                 call    #SYSTICK_calibration_stop_and_update
 
-                ; TODO: error handling
-                call    #SYSTICK_get ; -> (systick_l@R12, systick_h@R13)
-                push.w  R12
-                mov.w   #DT_GNSS_TICK_H,R12
+                call    #SYSTICK_get ; -> (systick@R12)
+                mov.w   R12,R13
+                mov.w   #DT_GNSS_TICK,R12
                 call    #DT_store
-                mov.w   #DT_GNSS_TICK_L,R12
-                pop.w   R13
-                call    #DT_store
-                mov.w   #DT_GNSS_QUATERS,R12
+                mov.w   #DT_GNSS_TIME,R12
                 mov.w   &time,R13
                 call    #DT_store
 
@@ -166,21 +162,10 @@ in_synchronized?:
                 .text
                 .def    GNSS_reftick
 GNSS_reftick:
-; () -> (error@R12,tick_l@R13,tick_h@R14)
+; () -> (error@R12,tick@R13)
                 .asmfunc
-                mov.w   #DT_GNSS_TICK_H,R12
-                call    #DT_load
-                tst.w   R12
-                jn      error?
-                push.w  R13
-                mov.w   #DT_GNSS_TICK_L,R12
-                call    #DT_load
-                pop.w   R14
-                tst.w   R12
-                jn      error?
-                ret
-error?:
-                mov.w   #-1,R12
+                mov.w   #DT_GNSS_TICK,R12
+                call    #DT_load ; -> (error@R12,value@R13)
                 ret
                 .endasmfunc
 
@@ -189,7 +174,7 @@ error?:
 GNSS_reftime:
 ; () -> (error@R12,quaters@R13)
                 .asmfunc
-                mov.w   #DT_GNSS_QUATERS,R12
+                mov.w   #DT_GNSS_TIME,R12
                 call    #DT_load
                 ret
                 .endasmfunc
